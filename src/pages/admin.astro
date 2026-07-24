@@ -1,10 +1,9 @@
 ---
 // 站内编辑器（Eleanor Login）：/admin/
-// 原理：这是纯静态站，没有服务器。编辑器用 GitHub API 直接向仓库提交修改，
-// 保存 = 自动 commit + push，网站随后由 Actions 自动重新构建发布。
-// 密码机制：一个仅限本仓库的 GitHub fine-grained 令牌，用你设置的密码在浏览器端
-// 加密（PBKDF2 + AES-GCM）后存为 public/admin-vault.json。登录时输入密码在浏览器端
-// 解密出令牌。密码与明文令牌不会离开浏览器。
+// 面向不写代码的使用者：所有内容都通过表单编辑，不暴露任何代码格式。
+// 原理：保存时用仅限本仓库的 GitHub 令牌直接向仓库提交修改（等于自动 commit+push），
+// 网站随后自动重新构建发布。令牌用你的密码加密后存在 public/admin-vault.json，
+// 密码与明文令牌只存在于你的浏览器里。
 import '../styles/global.css';
 
 const OWNER = 'eleanorliu737';
@@ -28,7 +27,7 @@ const BRANCH = 'main';
     <main class="site-main admin-main">
       <header class="admin-header">
         <a class="admin-logo" href="/">Eleanor<span class="logo-dot">.</span>Liu</a>
-        <span class="admin-tag">✏️ EDIT MODE</span>
+        <span class="admin-tag">✏️ 编辑模式</span>
         <button id="btn-logout" class="admin-btn ghost" type="button" hidden>退出登录</button>
       </header>
 
@@ -39,9 +38,8 @@ const BRANCH = 'main';
       <section id="view-setup" class="admin-card" hidden>
         <h1>首次配置</h1>
         <p class="admin-hint">
-          还没有设置过编辑密码。请粘贴你的 GitHub 令牌（仅限本仓库、Contents 读写权限的
-          fine-grained token），并设置一个今后登录用的密码。令牌会以加密形式存入仓库；
-          <strong>密码和明文令牌不会离开你的浏览器</strong>。
+          还没有设置过编辑密码。请粘贴你的 GitHub 令牌，并设置一个今后登录用的密码。
+          令牌会以加密形式存入仓库；<strong>密码和明文令牌不会离开你的浏览器</strong>。
         </p>
         <label>GitHub 令牌 <input id="setup-token" type="password" placeholder="github_pat_..." autocomplete="off" /></label>
         <label>设置密码（建议 12 位以上，越长越安全） <input id="setup-pass" type="password" autocomplete="new-password" /></label>
@@ -59,40 +57,134 @@ const BRANCH = 'main';
       </section>
 
       <section id="view-editor" hidden>
-        <div class="editor-grid">
-          <aside class="editor-side">
-            <p class="editor-side-title">📝 文章 / 随手记</p>
-            <ul id="post-list" class="editor-files"></ul>
-            <button id="btn-new" class="admin-btn small" type="button">➕ 新文章</button>
-            <p class="editor-side-title">🗂 站点数据</p>
-            <ul class="editor-files">
-              <li><button class="file-btn" type="button" data-path="src/data/journey.ts">轨迹 journey.ts</button></li>
-              <li><button class="file-btn" type="button" data-path="src/data/projects.ts">作品 projects.ts</button></li>
-              <li><button class="file-btn" type="button" data-path="src/data/bookmarks.ts">收藏 bookmarks.ts</button></li>
-            </ul>
-          </aside>
-          <div class="editor-pane">
-            <div class="editor-pane-head">
-              <span id="current-file" class="editor-filename">← 从左侧选择要编辑的文件</span>
-              <button id="btn-save" class="admin-btn" type="button" disabled>保存并发布</button>
+        <p class="editor-tip">💡 在这里做的任何修改，点「发布」之后网站会在 <strong>1-2 分钟</strong>内自动更新（刷新网站页面即可看到）。</p>
+
+        <nav class="tab-bar">
+          <button class="tab-btn active" type="button" data-tab="posts">📝 写文章</button>
+          <button class="tab-btn" type="button" data-tab="bookmarks">📚 收藏好文章</button>
+          <button class="tab-btn" type="button" data-tab="journey">🧭 人生轨迹</button>
+          <button class="tab-btn" type="button" data-tab="works">🛠 作品与想法</button>
+        </nav>
+
+        <!-- ============ 文章 ============ -->
+        <div id="tab-posts" class="tab-panel">
+          <div class="posts-grid">
+            <aside>
+              <button id="btn-post-new" class="admin-btn wide" type="button">➕ 写一篇新的</button>
+              <p class="side-caption">已发表的文章（点击可修改）：</p>
+              <ul id="post-list" class="post-picker"><li class="side-caption">读取中…</li></ul>
+            </aside>
+            <div id="post-form" class="form-panel" hidden>
+              <label class="f-field"><span class="f-label">标题</span>
+                <input id="post-title" class="f-input" type="text" placeholder="给这篇文章起个标题" />
+              </label>
+              <div class="f-row">
+                <label class="f-field"><span class="f-label">日期</span>
+                  <input id="post-date" class="f-input" type="date" />
+                </label>
+                <label class="f-field"><span class="f-label">这篇文章是什么语言写的？</span>
+                  <select id="post-lang" class="f-input">
+                    <option value="zh">中文</option>
+                    <option value="en">English</option>
+                  </select>
+                </label>
+              </div>
+              <label class="f-field"><span class="f-label">一句话摘要（显示在文章列表里）</span>
+                <input id="post-summary" class="f-input" type="text" placeholder="可以先空着，之后再补" />
+              </label>
+              <label class="f-field"><span class="f-label">标签（用逗号分开）</span>
+                <input id="post-tags" class="f-input" type="text" placeholder="例如：随手记, 生活" />
+              </label>
+              <label class="f-field"><span class="f-label">正文</span>
+                <textarea id="post-body" class="f-input f-body" placeholder="直接打字就行。&#10;&#10;空一行 = 分新段落。&#10;行首写「## 」 = 小标题。&#10;两个星号包住文字 = **加粗**。"></textarea>
+              </label>
+              <div class="form-actions">
+                <button id="btn-post-save" class="admin-btn" type="button">发布这篇文章</button>
+                <button id="btn-post-delete" class="admin-btn danger" type="button" hidden>删除这篇文章</button>
+              </div>
+              <p id="post-msg" class="admin-msg"></p>
             </div>
-            <textarea id="editor-text" spellcheck="false" placeholder="选择一个文件开始编辑…"></textarea>
-            <p id="editor-msg" class="admin-msg"></p>
+            <div id="post-empty" class="form-panel empty-hint">
+              <p>👈 点左边的「➕ 写一篇新的」开始记录，<br />或者点击一篇已有的文章进行修改。</p>
+            </div>
           </div>
+        </div>
+
+        <!-- ============ 收藏 ============ -->
+        <div id="tab-bookmarks" class="tab-panel" hidden>
+          <div class="form-panel add-box">
+            <p class="box-title">📥 收藏一篇好文章</p>
+            <label class="f-field"><span class="f-label">放进哪个收藏夹？</span>
+              <select id="bm-folder" class="f-input"></select>
+            </label>
+            <div id="bm-newfolder" hidden>
+              <div class="f-row">
+                <label class="f-field f-narrow"><span class="f-label">收藏夹图标（一个 emoji）</span>
+                  <input id="bm-nf-emoji" class="f-input" type="text" value="🔖" />
+                </label>
+                <label class="f-field"><span class="f-label">新收藏夹的名字</span>
+                  <input id="bm-nf-name" class="f-input" type="text" placeholder="例如：读书笔记" />
+                </label>
+              </div>
+              <label class="f-field"><span class="f-label">一句话介绍这个收藏夹（可空）</span>
+                <input id="bm-nf-blurb" class="f-input" type="text" />
+              </label>
+            </div>
+            <label class="f-field"><span class="f-label">文章标题</span>
+              <input id="bm-title" class="f-input" type="text" placeholder="这篇文章叫什么" />
+            </label>
+            <label class="f-field"><span class="f-label">网址（直接从浏览器地址栏复制过来）</span>
+              <input id="bm-url" class="f-input" type="text" placeholder="https://..." />
+            </label>
+            <label class="f-field"><span class="f-label">推荐语：为什么值得读？（可空）</span>
+              <input id="bm-note" class="f-input" type="text" />
+            </label>
+            <div class="form-actions">
+              <button id="btn-bm-add" class="admin-btn" type="button">收藏并发布</button>
+            </div>
+            <p id="bm-msg" class="admin-msg"></p>
+          </div>
+          <p class="side-caption">已有的收藏（点 ✕ 可删除）：</p>
+          <div id="bm-folders"></div>
+        </div>
+
+        <!-- ============ 轨迹 ============ -->
+        <div id="tab-journey" class="tab-panel" hidden>
+          <p class="side-caption">「轨迹」页上的人生章节，从上到下按顺序显示。中文版和英文版分别显示给选了对应语言的访客。</p>
+          <div id="jo-list"></div>
+          <div class="form-actions">
+            <button id="btn-jo-add" class="admin-btn ghost" type="button">➕ 添加一个新章节</button>
+            <button id="btn-jo-save" class="admin-btn" type="button">发布轨迹页的修改</button>
+          </div>
+          <p id="jo-msg" class="admin-msg"></p>
+        </div>
+
+        <!-- ============ 作品 ============ -->
+        <div id="tab-works" class="tab-panel" hidden>
+          <p class="box-title">🛠 做出来的作品</p>
+          <div id="wk-projects"></div>
+          <button id="btn-wk-addp" class="admin-btn ghost small" type="button">➕ 添加一个作品</button>
+          <p class="box-title" style="margin-top:2rem">💡 冒泡中的想法</p>
+          <div id="wk-ideas"></div>
+          <button id="btn-wk-addi" class="admin-btn ghost small" type="button">➕ 添加一个想法</button>
+          <div class="form-actions">
+            <button id="btn-wk-save" class="admin-btn" type="button">发布作品页的修改</button>
+          </div>
+          <p id="wk-msg" class="admin-msg"></p>
         </div>
       </section>
     </main>
 
     <style>
       .admin-main { padding-top: 1.5rem; }
-      .admin-header { display: flex; align-items: baseline; gap: 1rem; margin-bottom: 2rem; flex-wrap: wrap; }
+      .admin-header { display: flex; align-items: baseline; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
       .admin-logo { font-family: var(--mono); font-weight: 700; font-size: 1.05rem; color: var(--ink); }
       .admin-logo:hover { text-decoration: none; color: var(--accent); }
       .admin-tag {
         font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.14em;
         color: var(--accent); border: 1px solid var(--accent); border-radius: 999px; padding: 0.1rem 0.6rem;
       }
-      #btn-logout { margin-left: auto; }
+      #btn-logout { margin-left: auto; margin-top: 0; }
 
       .admin-card { max-width: 28rem; }
       .admin-card h1 { font-size: 1.5rem; }
@@ -105,45 +197,83 @@ const BRANCH = 'main';
       .admin-card input:focus { outline: none; border-color: var(--accent); }
 
       .admin-btn {
-        margin-top: 1.2rem; padding: 0.5rem 1.2rem; font-size: 0.95rem; font-family: inherit;
+        margin-top: 1rem; padding: 0.5rem 1.2rem; font-size: 0.95rem; font-family: inherit;
         color: #fff; background: var(--accent); border: none; border-radius: 8px; cursor: pointer;
       }
       .admin-btn:disabled { opacity: 0.45; cursor: not-allowed; }
-      .admin-btn.small { margin-top: 0.6rem; font-size: 0.85rem; padding: 0.35rem 0.8rem; }
-      .admin-btn.ghost { background: none; color: var(--muted); border: 1px solid var(--line); }
-      .admin-btn.ghost:hover { color: var(--accent); border-color: var(--accent); }
+      .admin-btn.small { font-size: 0.85rem; padding: 0.35rem 0.8rem; }
+      .admin-btn.wide { width: 100%; margin-top: 0; }
+      .admin-btn.ghost { background: none; color: var(--accent); border: 1px dashed var(--accent); }
+      .admin-btn.danger { background: none; color: #c0392b; border: 1px solid #c0392b; }
       .link-btn { background: none; border: none; padding: 0; color: var(--accent); cursor: pointer; font: inherit; font-size: 0.85rem; }
 
-      .admin-msg { color: var(--muted); font-size: 0.9rem; min-height: 1.4em; margin: 0.8rem 0 0; }
+      .admin-msg { color: var(--muted); font-size: 0.9rem; min-height: 1.4em; margin: 0.8rem 0 0; white-space: pre-line; }
       .admin-hint { color: var(--muted); font-size: 0.9rem; line-height: 1.7; }
 
-      .editor-grid { display: grid; grid-template-columns: 16rem 1fr; gap: 2rem; align-items: start; }
-      @media (max-width: 760px) { .editor-grid { grid-template-columns: 1fr; } }
+      .editor-tip {
+        background: var(--accent-soft); border-radius: 10px; padding: 0.7rem 1rem;
+        font-size: 0.9rem; color: var(--ink); margin: 0 0 1.2rem;
+      }
 
-      .editor-side-title {
-        font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.14em;
-        text-transform: uppercase; color: var(--accent); margin: 1.4rem 0 0.5rem;
+      .tab-bar { display: flex; gap: 0.5rem; flex-wrap: wrap; border-bottom: 2px solid var(--line); margin-bottom: 1.5rem; }
+      .tab-btn {
+        background: none; border: none; cursor: pointer; font: inherit; font-size: 0.98rem;
+        padding: 0.5rem 0.9rem; color: var(--muted); border-bottom: 3px solid transparent; margin-bottom: -2px;
       }
-      .editor-side-title:first-child { margin-top: 0; }
-      .editor-files { list-style: none; margin: 0; padding: 0; }
-      .editor-files li { margin: 0.15rem 0; }
-      .file-btn {
-        display: block; width: 100%; text-align: left; background: none; border: none;
-        padding: 0.3rem 0.5rem; border-radius: 6px; color: var(--ink); cursor: pointer;
-        font: inherit; font-size: 0.88rem;
-      }
-      .file-btn:hover { background: var(--accent-soft); }
-      .file-btn.active { background: var(--accent); color: #fff; }
+      .tab-btn.active { color: var(--ink); font-weight: 600; border-bottom-color: var(--accent); }
 
-      .editor-pane-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
-      .editor-pane-head .admin-btn { margin-top: 0; }
-      .editor-filename { font-family: var(--mono); font-size: 0.85rem; color: var(--muted); word-break: break-all; }
-      #editor-text {
-        width: 100%; min-height: 62vh; margin-top: 0.8rem; padding: 1rem 1.1rem; box-sizing: border-box;
-        font-family: var(--mono); font-size: 0.9rem; line-height: 1.7; color: var(--ink);
-        background: var(--bg-card); border: 1px solid var(--line); border-radius: 10px; resize: vertical;
+      .posts-grid { display: grid; grid-template-columns: 17rem 1fr; gap: 2rem; align-items: start; }
+      @media (max-width: 800px) { .posts-grid { grid-template-columns: 1fr; } }
+
+      .side-caption { font-size: 0.85rem; color: var(--muted); margin: 1rem 0 0.5rem; }
+      .post-picker { list-style: none; margin: 0; padding: 0; }
+      .post-picker li { margin: 0.2rem 0; }
+      .post-pick-btn {
+        display: block; width: 100%; text-align: left; background: none; border: 1px solid transparent;
+        padding: 0.45rem 0.6rem; border-radius: 8px; color: var(--ink); cursor: pointer; font: inherit; font-size: 0.9rem;
       }
-      #editor-text:focus { outline: none; border-color: var(--accent); }
+      .post-pick-btn:hover { background: var(--accent-soft); }
+      .post-pick-btn.active { border-color: var(--accent); background: var(--accent-soft); }
+      .post-pick-meta { display: block; font-family: var(--mono); font-size: 0.72rem; color: var(--muted); margin-top: 0.15rem; }
+
+      .form-panel { min-width: 0; }
+      .empty-hint { color: var(--muted); padding-top: 2rem; line-height: 2; }
+      .add-box { background: var(--bg-card); border: 1px solid var(--line); border-radius: 12px; padding: 1.2rem 1.4rem 1.4rem; max-width: 36rem; }
+      .box-title { font-weight: 600; font-size: 1.05rem; margin: 0 0 0.4rem; }
+
+      .f-field { display: block; margin: 0.9rem 0 0; min-width: 0; flex: 1; }
+      .f-label { display: block; font-size: 0.85rem; color: var(--muted); margin-bottom: 0.3rem; }
+      .f-input {
+        display: block; width: 100%; padding: 0.5rem 0.7rem; box-sizing: border-box;
+        font: inherit; font-size: 0.95rem; color: var(--ink);
+        background: var(--bg-card); border: 1px solid var(--line); border-radius: 8px;
+      }
+      .f-input:focus { outline: none; border-color: var(--accent); }
+      textarea.f-input { min-height: 6rem; line-height: 1.7; resize: vertical; }
+      .f-body { min-height: 45vh; }
+      .f-row { display: flex; gap: 1rem; flex-wrap: wrap; }
+      .f-narrow { flex: 0 0 11rem; }
+      .form-actions { display: flex; gap: 0.8rem; align-items: center; flex-wrap: wrap; margin-top: 0.5rem; }
+
+      .item-card {
+        background: var(--bg-card); border: 1px solid var(--line); border-radius: 12px;
+        padding: 0.9rem 1.2rem 1.2rem; margin: 1rem 0; position: relative;
+      }
+      .item-card-head { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+      .item-card-title { font-weight: 600; font-size: 0.95rem; color: var(--muted); }
+      .del-btn {
+        background: none; border: none; cursor: pointer; color: var(--muted); font-size: 0.85rem; padding: 0.2rem 0.4rem;
+      }
+      .del-btn:hover { color: #c0392b; }
+
+      .bm-folder-block { margin: 1.2rem 0; }
+      .bm-folder-name { font-weight: 600; margin: 0 0 0.3rem; }
+      .bm-items { list-style: none; margin: 0; padding: 0; }
+      .bm-items li {
+        display: flex; align-items: baseline; gap: 0.6rem; padding: 0.4rem 0;
+        border-bottom: 1px dashed var(--line); font-size: 0.92rem;
+      }
+      .bm-item-note { color: var(--muted); font-size: 0.85rem; flex: 1; }
     </style>
 
     <script define:vars={{ OWNER, REPO, BRANCH }}>
@@ -154,13 +284,43 @@ const BRANCH = 'main';
       const views = ['view-loading', 'view-setup', 'view-login', 'view-editor'];
 
       let token = localStorage.getItem('admin-token') || '';
-      let currentPath = '';
-      let currentSha = '';
+      const state = {
+        posts: [],
+        currentPost: null,
+        bookmarks: null,
+        journey: null,
+        works: null,
+        dirty: { journey: false, works: false },
+        loaded: {},
+      };
 
       function show(view) {
         views.forEach((v) => ($(v).hidden = v !== view));
         $('btn-logout').hidden = view !== 'view-editor';
       }
+      function el(tag, cls, text) {
+        const e = document.createElement(tag);
+        if (cls) e.className = cls;
+        if (text !== undefined) e.textContent = text;
+        return e;
+      }
+      function field(labelText, value, onInput, opts = {}) {
+        const wrap = el('label', 'f-field' + (opts.narrow ? ' f-narrow' : ''));
+        wrap.appendChild(el('span', 'f-label', labelText));
+        const input = opts.textarea ? el('textarea', 'f-input') : el('input', 'f-input');
+        if (!opts.textarea) input.type = 'text';
+        input.value = value || '';
+        if (opts.placeholder) input.placeholder = opts.placeholder;
+        input.addEventListener('input', () => onInput(input.value));
+        wrap.appendChild(input);
+        return wrap;
+      }
+      function row(...children) {
+        const r = el('div', 'f-row');
+        children.forEach((c) => r.appendChild(c));
+        return r;
+      }
+      const today = () => new Date().toISOString().slice(0, 10);
 
       // ---------- base64 / 加密工具 ----------
       function bytesToB64(bytes) {
@@ -220,7 +380,6 @@ const BRANCH = 'main';
         }
       }
       async function loadVault() {
-        // 先读站点静态文件；若刚配置完还没部署好，回退读 GitHub raw
         const urls = [
           `/admin-vault.json?t=${Date.now()}`,
           `https://raw.githubusercontent.com/${OWNER}/${REPO}/${BRANCH}/public/admin-vault.json?t=${Date.now()}`,
@@ -235,7 +394,7 @@ const BRANCH = 'main';
       }
       async function getFile(path) {
         const r = await gh(`/repos/${OWNER}/${REPO}/contents/${path}?ref=${BRANCH}&t=${Date.now()}`);
-        if (!r.ok) throw new Error('读取失败 HTTP ' + r.status);
+        if (!r.ok) throw new Error('读取失败（HTTP ' + r.status + '）');
         const j = await r.json();
         return { text: b64ToUtf8(j.content), sha: j.sha };
       }
@@ -245,19 +404,26 @@ const BRANCH = 'main';
         const r = await gh(`/repos/${OWNER}/${REPO}/contents/${path}`, { method: 'PUT', body: JSON.stringify(body) });
         if (!r.ok) {
           const j = await r.json().catch(() => ({}));
-          throw new Error('保存失败 HTTP ' + r.status + (j.message ? '：' + j.message : ''));
+          throw new Error('保存失败（HTTP ' + r.status + (j.message ? '：' + j.message : '') + '）');
         }
         return (await r.json()).content.sha;
       }
+      async function deleteFile(path, message, sha) {
+        const r = await gh(`/repos/${OWNER}/${REPO}/contents/${path}`, {
+          method: 'DELETE',
+          body: JSON.stringify({ message, branch: BRANCH, sha }),
+        });
+        if (!r.ok) throw new Error('删除失败（HTTP ' + r.status + '）');
+      }
+      const OK_MSG = '✅ 已发布！网站会在 1-2 分钟后自动更新。';
 
-      // ---------- 页面流程 ----------
+      // ---------- 登录 / 配置流程 ----------
       async function init() {
         if (await tokenValid()) return enterEditor();
         token = '';
         const vault = await loadVault();
         show(vault ? 'view-login' : 'view-setup');
       }
-
       $('btn-setup').addEventListener('click', async () => {
         const tok = $('setup-token').value.trim();
         const p1 = $('setup-pass').value;
@@ -285,7 +451,6 @@ const BRANCH = 'main';
           msg.textContent = '❌ ' + e.message;
         }
       });
-
       $('btn-login').addEventListener('click', doLogin);
       $('login-pass').addEventListener('keydown', (e) => { if (e.key === 'Enter') doLogin(); });
       async function doLogin() {
@@ -304,10 +469,9 @@ const BRANCH = 'main';
           msg.textContent = '';
           enterEditor();
         } catch (e) {
-          msg.textContent = '密码不对（解密失败）';
+          msg.textContent = '密码不对，再试一次？';
         }
       }
-
       $('btn-reset').addEventListener('click', () => show('view-setup'));
       $('btn-logout').addEventListener('click', () => {
         localStorage.removeItem('admin-token');
@@ -315,81 +479,464 @@ const BRANCH = 'main';
         location.reload();
       });
 
-      // ---------- 编辑器 ----------
+      // ---------- 标签页切换 ----------
+      document.querySelectorAll('.tab-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.tab-btn').forEach((b) => b.classList.toggle('active', b === btn));
+          document.querySelectorAll('.tab-panel').forEach((p) => (p.hidden = p.id !== 'tab-' + btn.dataset.tab));
+          openTab(btn.dataset.tab);
+        });
+      });
+      function openTab(name) {
+        if (state.loaded[name]) return;
+        state.loaded[name] = true;
+        if (name === 'posts') loadPosts();
+        if (name === 'bookmarks') loadBookmarks();
+        if (name === 'journey') loadJourney();
+        if (name === 'works') loadWorks();
+      }
       async function enterEditor() {
         show('view-editor');
-        refreshPosts();
+        openTab('posts');
       }
-      async function refreshPosts() {
-        const r = await gh(`/repos/${OWNER}/${REPO}/contents/src/content/posts?ref=${BRANCH}`);
-        const list = $('post-list');
-        list.innerHTML = '';
-        if (!r.ok) return;
-        for (const f of await r.json()) {
-          const li = document.createElement('li');
-          const btn = document.createElement('button');
-          btn.type = 'button';
-          btn.className = 'file-btn';
-          btn.dataset.path = f.path;
-          btn.textContent = f.name;
-          li.appendChild(btn);
-          list.appendChild(li);
+      window.addEventListener('beforeunload', (e) => {
+        if (state.dirty.journey || state.dirty.works) {
+          e.preventDefault();
+          e.returnValue = '';
         }
-      }
-      document.addEventListener('click', (e) => {
-        const btn = e.target.closest('.file-btn');
-        if (btn) openFile(btn.dataset.path, btn);
       });
-      async function openFile(path, btn) {
-        $('editor-msg').textContent = '读取中…';
-        try {
-          const f = await getFile(path);
-          currentPath = path;
-          currentSha = f.sha;
-          $('editor-text').value = f.text;
-          $('current-file').textContent = path + (path.endsWith('.ts') ? '　⚠ 注意保持代码格式（引号、逗号、括号）' : '');
-          $('btn-save').disabled = false;
-          $('editor-msg').textContent = '';
-          document.querySelectorAll('.file-btn.active').forEach((b) => b.classList.remove('active'));
-          if (btn) btn.classList.add('active');
-        } catch (e) {
-          $('editor-msg').textContent = '❌ ' + e.message;
+
+      // ============================================================
+      // 📝 文章
+      // ============================================================
+      function parsePost(text) {
+        const m = text.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/);
+        if (!m) return { title: '', date: today(), lang: 'zh', summary: '', tags: [], body: text };
+        const fm = {};
+        m[1].split(/\r?\n/).forEach((line) => {
+          const i = line.indexOf(':');
+          if (i < 0) return;
+          fm[line.slice(0, i).trim()] = line.slice(i + 1).trim();
+        });
+        const unq = (s) => {
+          if (!s) return '';
+          if (s.startsWith('"') && s.endsWith('"')) {
+            try { return JSON.parse(s); } catch (e) { return s.slice(1, -1); }
+          }
+          return s;
+        };
+        let tags = [];
+        if (fm.tags) {
+          const t = fm.tags.replace(/^\[|\]$/g, '').trim();
+          tags = t ? t.split(',').map((s) => unq(s.trim())).filter(Boolean) : [];
         }
+        return {
+          title: unq(fm.title),
+          date: (fm.date || today()).slice(0, 10),
+          lang: fm.lang === 'en' ? 'en' : 'zh',
+          summary: unq(fm.summary),
+          tags,
+          body: m[2].replace(/^\r?\n/, ''),
+        };
       }
-      $('btn-save').addEventListener('click', async () => {
-        if (!currentPath) return;
-        const msg = $('editor-msg');
-        msg.textContent = '保存中…';
-        $('btn-save').disabled = true;
+      function buildPost(p) {
+        const q = (s) => JSON.stringify(s || '');
+        const tags = '[' + p.tags.map((t) => q(t)).join(', ') + ']';
+        return `---\ntitle: ${q(p.title)}\ndate: ${p.date}\nlang: ${p.lang}\nsummary: ${q(p.summary)}\ntags: ${tags}\ndraft: false\n---\n\n${p.body.trim()}\n`;
+      }
+      async function loadPosts() {
+        const listEl = $('post-list');
+        listEl.innerHTML = '';
+        listEl.appendChild(el('li', 'side-caption', '读取中…'));
+        const r = await gh(`/repos/${OWNER}/${REPO}/contents/src/content/posts?ref=${BRANCH}`);
+        const files = r.ok ? await r.json() : [];
+        state.posts = [];
+        for (const f of files) {
+          if (!f.name.endsWith('.md')) continue;
+          try {
+            const file = await getFile(f.path);
+            state.posts.push({ path: f.path, sha: file.sha, ...parsePost(file.text) });
+          } catch (e) {}
+        }
+        state.posts.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+        renderPostList();
+      }
+      function renderPostList() {
+        const listEl = $('post-list');
+        listEl.innerHTML = '';
+        if (!state.posts.length) listEl.appendChild(el('li', 'side-caption', '还没有文章'));
+        state.posts.forEach((p) => {
+          const li = el('li');
+          const btn = el('button', 'post-pick-btn');
+          btn.type = 'button';
+          btn.appendChild(el('span', '', p.title || '（无标题）'));
+          btn.appendChild(el('span', 'post-pick-meta', `${p.date} · ${p.lang === 'zh' ? '中文' : 'EN'}`));
+          if (state.currentPost && state.currentPost.path === p.path) btn.classList.add('active');
+          btn.addEventListener('click', () => openPost(p));
+          li.appendChild(btn);
+          listEl.appendChild(li);
+        });
+      }
+      function showPostForm(showIt) {
+        $('post-form').hidden = !showIt;
+        $('post-empty').hidden = showIt;
+      }
+      function openPost(p) {
+        state.currentPost = p;
+        $('post-title').value = p.title;
+        $('post-date').value = p.date;
+        $('post-lang').value = p.lang;
+        $('post-summary').value = p.summary;
+        $('post-tags').value = p.tags.join(', ');
+        $('post-body').value = p.body;
+        $('btn-post-delete').hidden = false;
+        $('btn-post-save').textContent = '保存修改并发布';
+        $('post-msg').textContent = '';
+        showPostForm(true);
+        renderPostList();
+      }
+      $('btn-post-new').addEventListener('click', () => {
+        const stamp = new Date();
+        const pad = (n) => String(n).padStart(2, '0');
+        const slug = `note-${stamp.getFullYear()}${pad(stamp.getMonth() + 1)}${pad(stamp.getDate())}-${pad(stamp.getHours())}${pad(stamp.getMinutes())}`;
+        state.currentPost = { path: `src/content/posts/${slug}.md`, sha: null, isNew: true };
+        $('post-title').value = '';
+        $('post-date').value = today();
+        $('post-lang').value = 'zh';
+        $('post-summary').value = '';
+        $('post-tags').value = '随手记';
+        $('post-body').value = '';
+        $('btn-post-delete').hidden = true;
+        $('btn-post-save').textContent = '发布这篇文章';
+        $('post-msg').textContent = '';
+        showPostForm(true);
+        renderPostList();
+        $('post-title').focus();
+      });
+      $('btn-post-save').addEventListener('click', async () => {
+        const cp = state.currentPost;
+        if (!cp) return;
+        const msg = $('post-msg');
+        const data = {
+          title: $('post-title').value.trim(),
+          date: $('post-date').value || today(),
+          lang: $('post-lang').value,
+          summary: $('post-summary').value.trim(),
+          tags: $('post-tags').value.split(/[,，]/).map((s) => s.trim()).filter(Boolean),
+          body: $('post-body').value,
+        };
+        if (!data.title) return (msg.textContent = '请先给文章起个标题');
+        if (!data.body.trim()) return (msg.textContent = '正文还是空的');
+        msg.textContent = '发布中…';
+        $('btn-post-save').disabled = true;
         try {
-          currentSha = await putFile(currentPath, $('editor-text').value, `Update ${currentPath} via site editor`, currentSha);
-          msg.textContent = '✅ 已保存并推送，网站将在 1-2 分钟后自动更新';
+          const sha = await putFile(cp.path, buildPost(data), (cp.isNew ? 'New post: ' : 'Update post: ') + data.title, cp.sha || undefined);
+          Object.assign(cp, data, { sha, isNew: false });
+          if (!state.posts.includes(cp)) state.posts.unshift(cp);
+          state.posts.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+          renderPostList();
+          $('btn-post-delete').hidden = false;
+          $('btn-post-save').textContent = '保存修改并发布';
+          msg.textContent = OK_MSG;
         } catch (e) {
           msg.textContent = '❌ ' + e.message;
         }
-        $('btn-save').disabled = false;
+        $('btn-post-save').disabled = false;
       });
-      $('btn-new').addEventListener('click', async () => {
-        const name = prompt('新文章的文件名（英文或拼音，将成为网址的一部分，例如 my-first-note）：');
-        if (!name) return;
-        const slug = name.trim().toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '');
-        if (!slug) return alert('文件名无效，请用英文字母、数字或短横线');
-        const path = `src/content/posts/${slug}.md`;
-        const today = new Date().toISOString().slice(0, 10);
-        const template = `---\ntitle: 新文章标题\ndate: ${today}\nlang: zh\nsummary: 一句话摘要。\ntags: [随手记]\ndraft: false\n---\n\n从这里开始写……\n`;
-        $('editor-msg').textContent = '创建中…';
+      $('btn-post-delete').addEventListener('click', async () => {
+        const cp = state.currentPost;
+        if (!cp || cp.isNew) return;
+        if (!confirm(`确定要删除「${cp.title || '这篇文章'}」吗？删除后网站上就看不到了。`)) return;
+        const msg = $('post-msg');
+        msg.textContent = '删除中…';
         try {
-          const sha = await putFile(path, template, `New post: ${slug}`, undefined);
-          await refreshPosts();
-          currentPath = path;
-          currentSha = sha;
-          $('editor-text').value = template;
-          $('current-file').textContent = path;
-          $('btn-save').disabled = false;
-          $('editor-msg').textContent = '✅ 已创建，写完记得点「保存并发布」';
+          await deleteFile(cp.path, 'Delete post: ' + (cp.title || cp.path), cp.sha);
+          state.posts = state.posts.filter((p) => p !== cp);
+          state.currentPost = null;
+          renderPostList();
+          showPostForm(false);
         } catch (e) {
-          $('editor-msg').textContent = '❌ ' + e.message;
+          msg.textContent = '❌ ' + e.message;
         }
+      });
+
+      // ============================================================
+      // 📚 收藏
+      // ============================================================
+      async function loadBookmarks() {
+        const file = await getFile('src/data/bookmarks.json');
+        state.bookmarks = { sha: file.sha, data: JSON.parse(file.text) };
+        renderBookmarks();
+      }
+      function renderBookmarks() {
+        const sel = $('bm-folder');
+        sel.innerHTML = '';
+        state.bookmarks.data.forEach((f, i) => {
+          const o = el('option', '', `${f.emoji} ${f.name}`);
+          o.value = String(i);
+          sel.appendChild(o);
+        });
+        const oNew = el('option', '', '📁 新建一个收藏夹…');
+        oNew.value = '_new';
+        sel.appendChild(oNew);
+        $('bm-newfolder').hidden = sel.value !== '_new';
+
+        const box = $('bm-folders');
+        box.innerHTML = '';
+        state.bookmarks.data.forEach((f, fi) => {
+          const block = el('div', 'bm-folder-block');
+          block.appendChild(el('p', 'bm-folder-name', `${f.emoji} ${f.name}`));
+          const ul = el('ul', 'bm-items');
+          f.items.forEach((it, ii) => {
+            const li = el('li');
+            const a = el('a', '', it.title);
+            a.href = it.url;
+            a.target = '_blank';
+            a.rel = 'noopener';
+            li.appendChild(a);
+            li.appendChild(el('span', 'bm-item-note', it.note || ''));
+            const del = el('button', 'del-btn', '✕ 删除');
+            del.type = 'button';
+            del.addEventListener('click', () => removeBookmark(fi, ii, it.title));
+            li.appendChild(del);
+            ul.appendChild(li);
+          });
+          if (!f.items.length) ul.appendChild(el('li', 'bm-item-note', '（这个收藏夹还是空的）'));
+          block.appendChild(ul);
+          box.appendChild(block);
+        });
+      }
+      $('bm-folder').addEventListener('change', () => {
+        $('bm-newfolder').hidden = $('bm-folder').value !== '_new';
+      });
+      async function saveBookmarks(message) {
+        state.bookmarks.sha = await putFile(
+          'src/data/bookmarks.json',
+          JSON.stringify(state.bookmarks.data, null, 2) + '\n',
+          message,
+          state.bookmarks.sha
+        );
+      }
+      $('btn-bm-add').addEventListener('click', async () => {
+        const msg = $('bm-msg');
+        const title = $('bm-title').value.trim();
+        let url = $('bm-url').value.trim();
+        if (!title) return (msg.textContent = '请填一下文章标题');
+        if (!url) return (msg.textContent = '请把文章网址贴进来');
+        if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+        let source = '';
+        try { source = new URL(url).hostname.replace(/^www\./, ''); } catch (e) { return (msg.textContent = '这个网址好像不对，检查一下？'); }
+
+        let folder;
+        if ($('bm-folder').value === '_new') {
+          const name = $('bm-nf-name').value.trim();
+          if (!name) return (msg.textContent = '请给新收藏夹起个名字');
+          folder = {
+            emoji: $('bm-nf-emoji').value.trim() || '🔖',
+            name,
+            nameEn: name,
+            blurb: $('bm-nf-blurb').value.trim(),
+            blurbEn: $('bm-nf-blurb').value.trim(),
+            items: [],
+          };
+          state.bookmarks.data.push(folder);
+        } else {
+          folder = state.bookmarks.data[Number($('bm-folder').value)];
+        }
+        folder.items.unshift({ title, url, source, note: $('bm-note').value.trim() });
+        msg.textContent = '发布中…';
+        $('btn-bm-add').disabled = true;
+        try {
+          await saveBookmarks('Add bookmark: ' + title);
+          renderBookmarks();
+          $('bm-title').value = '';
+          $('bm-url').value = '';
+          $('bm-note').value = '';
+          $('bm-nf-name').value = '';
+          $('bm-nf-blurb').value = '';
+          msg.textContent = OK_MSG;
+        } catch (e) {
+          msg.textContent = '❌ ' + e.message;
+        }
+        $('btn-bm-add').disabled = false;
+      });
+      async function removeBookmark(fi, ii, title) {
+        if (!confirm(`确定删除收藏「${title}」吗？`)) return;
+        state.bookmarks.data[fi].items.splice(ii, 1);
+        const msg = $('bm-msg');
+        msg.textContent = '删除中…';
+        try {
+          await saveBookmarks('Remove bookmark: ' + title);
+          renderBookmarks();
+          msg.textContent = OK_MSG;
+        } catch (e) {
+          msg.textContent = '❌ ' + e.message;
+        }
+      }
+
+      // ============================================================
+      // 🧭 轨迹
+      // ============================================================
+      const JO_FIELDS = [
+        ['period', '时间段（例：2026 · 现在 Now）'],
+        ['emoji', '图标（一个 emoji）', { narrow: true }],
+        ['title', '章节标题 · 中文'],
+        ['titleEn', '章节标题 · 英文'],
+        ['tagline', '性格关键词 · 中文（例：「想法不值钱，做出来才算」）'],
+        ['taglineEn', '性格关键词 · 英文'],
+        ['body', '这一章的故事 · 中文', { textarea: true }],
+        ['bodyEn', '这一章的故事 · 英文', { textarea: true }],
+      ];
+      async function loadJourney() {
+        const file = await getFile('src/data/journey.json');
+        state.journey = { sha: file.sha, data: JSON.parse(file.text) };
+        renderJourney();
+      }
+      function markDirty(which) {
+        state.dirty[which] = true;
+        const btn = which === 'journey' ? $('btn-jo-save') : $('btn-wk-save');
+        btn.textContent = (which === 'journey' ? '发布轨迹页的修改' : '发布作品页的修改') + '（有未发布的改动）';
+      }
+      function itemCard(titleText, obj, fields, which, onDelete) {
+        const card = el('div', 'item-card');
+        const head = el('div', 'item-card-head');
+        head.appendChild(el('span', 'item-card-title', titleText));
+        const del = el('button', 'del-btn', '✕ 删除');
+        del.type = 'button';
+        del.addEventListener('click', onDelete);
+        head.appendChild(del);
+        card.appendChild(head);
+        let pendingRow = [];
+        fields.forEach(([key, label, opts = {}]) => {
+          const f = field(label, obj[key], (v) => { obj[key] = v; markDirty(which); }, opts);
+          if (opts.narrow && pendingRow.length === 0) {
+            pendingRow.push(f);
+          } else if (pendingRow.length) {
+            card.appendChild(row(...pendingRow, f));
+            pendingRow = [];
+          } else {
+            card.appendChild(f);
+          }
+        });
+        pendingRow.forEach((f) => card.appendChild(f));
+        return card;
+      }
+      function renderJourney() {
+        const box = $('jo-list');
+        box.innerHTML = '';
+        state.journey.data.forEach((ch, i) => {
+          box.appendChild(
+            itemCard(`第 ${i + 1} 章`, ch, JO_FIELDS, 'journey', () => {
+              if (!confirm(`确定删除「${ch.title || '这一章'}」吗？（删除后仍需点发布才生效）`)) return;
+              state.journey.data.splice(i, 1);
+              markDirty('journey');
+              renderJourney();
+            })
+          );
+        });
+      }
+      $('btn-jo-add').addEventListener('click', () => {
+        state.journey.data.push({ period: '', emoji: '✨', title: '', titleEn: '', tagline: '', taglineEn: '', body: '', bodyEn: '' });
+        markDirty('journey');
+        renderJourney();
+      });
+      $('btn-jo-save').addEventListener('click', async () => {
+        const msg = $('jo-msg');
+        msg.textContent = '发布中…';
+        $('btn-jo-save').disabled = true;
+        try {
+          state.journey.sha = await putFile('src/data/journey.json', JSON.stringify(state.journey.data, null, 2) + '\n', 'Update journey page', state.journey.sha);
+          state.dirty.journey = false;
+          $('btn-jo-save').textContent = '发布轨迹页的修改';
+          msg.textContent = OK_MSG;
+        } catch (e) {
+          msg.textContent = '❌ ' + e.message;
+        }
+        $('btn-jo-save').disabled = false;
+      });
+
+      // ============================================================
+      // 🛠 作品与想法
+      // ============================================================
+      const WK_P_FIELDS = [
+        ['emoji', '图标（一个 emoji）', { narrow: true }],
+        ['name', '作品名 · 中文'],
+        ['nameEn', '作品名 · 英文'],
+        ['desc', '介绍 · 中文', { textarea: true }],
+        ['descEn', '介绍 · 英文', { textarea: true }],
+        ['stackText', '用到的技术（用逗号分开，例：Python, RAG）'],
+        ['link', '链接（作品的网址或 GitHub 地址）'],
+        ['status', '状态 · 中文（例：✅ 已完成）'],
+        ['statusEn', '状态 · 英文'],
+      ];
+      const WK_I_FIELDS = [
+        ['emoji', '图标（一个 emoji）', { narrow: true }],
+        ['text', '想法 · 中文'],
+        ['textEn', '想法 · 英文'],
+      ];
+      async function loadWorks() {
+        const file = await getFile('src/data/projects.json');
+        state.works = { sha: file.sha, data: JSON.parse(file.text) };
+        state.works.data.projects.forEach((p) => (p.stackText = (p.stack || []).join(', ')));
+        renderWorks();
+      }
+      function renderWorks() {
+        const pBox = $('wk-projects');
+        pBox.innerHTML = '';
+        state.works.data.projects.forEach((p, i) => {
+          pBox.appendChild(
+            itemCard(`作品 ${i + 1}`, p, WK_P_FIELDS, 'works', () => {
+              if (!confirm(`确定删除作品「${p.name || ''}」吗？（删除后仍需点发布才生效）`)) return;
+              state.works.data.projects.splice(i, 1);
+              markDirty('works');
+              renderWorks();
+            })
+          );
+        });
+        const iBox = $('wk-ideas');
+        iBox.innerHTML = '';
+        state.works.data.ideas.forEach((idea, i) => {
+          iBox.appendChild(
+            itemCard(`想法 ${i + 1}`, idea, WK_I_FIELDS, 'works', () => {
+              if (!confirm('确定删除这个想法吗？（删除后仍需点发布才生效）')) return;
+              state.works.data.ideas.splice(i, 1);
+              markDirty('works');
+              renderWorks();
+            })
+          );
+        });
+      }
+      $('btn-wk-addp').addEventListener('click', () => {
+        state.works.data.projects.push({ emoji: '🛠', name: '', nameEn: '', desc: '', descEn: '', stack: [], stackText: '', link: '', status: '🚧 进行中', statusEn: '🚧 In progress' });
+        markDirty('works');
+        renderWorks();
+      });
+      $('btn-wk-addi').addEventListener('click', () => {
+        state.works.data.ideas.push({ emoji: '💡', text: '', textEn: '' });
+        markDirty('works');
+        renderWorks();
+      });
+      $('btn-wk-save').addEventListener('click', async () => {
+        const msg = $('wk-msg');
+        msg.textContent = '发布中…';
+        $('btn-wk-save').disabled = true;
+        try {
+          const clean = {
+            projects: state.works.data.projects.map((p) => ({
+              emoji: p.emoji, name: p.name, nameEn: p.nameEn, desc: p.desc, descEn: p.descEn,
+              stack: (p.stackText || '').split(/[,，]/).map((s) => s.trim()).filter(Boolean),
+              link: p.link, status: p.status, statusEn: p.statusEn,
+            })),
+            ideas: state.works.data.ideas.map((i) => ({ emoji: i.emoji, text: i.text, textEn: i.textEn })),
+          };
+          state.works.sha = await putFile('src/data/projects.json', JSON.stringify(clean, null, 2) + '\n', 'Update works page', state.works.sha);
+          state.dirty.works = false;
+          $('btn-wk-save').textContent = '发布作品页的修改';
+          msg.textContent = OK_MSG;
+        } catch (e) {
+          msg.textContent = '❌ ' + e.message;
+        }
+        $('btn-wk-save').disabled = false;
       });
 
       init();

@@ -9,13 +9,18 @@ A hand-built personal website: life journey, works & ideas, writing, and a publi
 | Page | Path | Content lives in |
 | --- | --- | --- |
 | 首页 Home | `/` | `src/pages/index.astro` |
-| 轨迹 Journey | `/journey/` | `src/data/journey.ts` |
-| 作品 Works | `/works/` | `src/data/projects.ts` |
+| 轨迹 Journey | `/journey/` | `src/data/journey.json` |
+| 作品 Works | `/works/` | `src/data/projects.json` |
 | 文章 Writing | `/writing/` | `src/content/posts/*.md` |
-| 收藏 Library | `/library/` | `src/data/bookmarks.ts` |
+| 收藏 Library | `/library/` | `src/data/bookmarks.json` |
 | 关于 About | `/about/` | `src/pages/about.astro` |
+| 编辑器 Editor | `/admin/` | `src/pages/admin.astro` |
 
 ## How to update content · 如何更新内容
+
+**The easy way** — open `/admin/` on the live site (the ✏️ Eleanor Login entry in the contact popover), enter the password, and edit everything through forms: posts, bookmarks, journey chapters, and projects. Saving publishes automatically in 1-2 minutes.
+
+> **最简单的方式** —— 打开网站上的 `/admin/`（左上角名片里的 ✏️ Eleanor Login），输入密码后即可用表单编辑所有内容：文章、收藏、轨迹、作品。点保存后 1-2 分钟自动上线。以下是手动编辑文件的方式（效果相同）：
 
 **Write a new article** — create a new `.md` file in `src/content/posts/`:
 
@@ -33,13 +38,13 @@ tags: [标签1, 标签2]
 正文从这里开始……
 ```
 
-**Save a bookmark** — add one entry to a folder's `items` in `src/data/bookmarks.ts`. To create a new folder, copy an existing folder object and edit it.
+**Save a bookmark** — add one entry to a folder's `items` in `src/data/bookmarks.json`. To create a new folder, copy an existing folder object and edit it.
 
-> **收藏一篇文章** —— 打开 `src/data/bookmarks.ts`，往对应收藏夹的 `items` 里加一条 `{ title, url, source, note }`。想新建收藏夹，复制一个 folder 对象改改就行。
+> **收藏一篇文章** —— 打开 `src/data/bookmarks.json`，往对应收藏夹的 `items` 里加一条 `{ title, url, source, note }`。想新建收藏夹，复制一个 folder 对象改改就行。
 
-**Edit your journey / projects** — plain text in `src/data/journey.ts` and `src/data/projects.ts`.
+**Edit your journey / projects** — plain text in `src/data/journey.json` and `src/data/projects.json`.
 
-> **修改轨迹 / 作品** —— 直接改 `src/data/journey.ts` 和 `src/data/projects.ts` 里的文字。
+> **修改轨迹 / 作品** —— 直接改 `src/data/journey.json` 和 `src/data/projects.json` 里的文字。
 
 ## Development · 本地开发
 

@@ -1,6 +1,8 @@
 ---
 import Base from '../layouts/Base.astro';
-import { projects, ideas } from '../data/projects';
+import data from '../data/projects.json';
+
+const { projects, ideas } = data;
 ---
 
 <Base title="作品与想法 Works" active="works">

@@ -1,0 +1,148 @@
+---
+import '../styles/global.css';
+
+interface Props {
+  title?: string;
+  description?: string;
+  active?: string;
+}
+
+const {
+  title,
+  description = "Eleanor Liu's personal site: journey, works, writing, and a library of good reads. Eleanor Liu 的个人网站：轨迹、作品、文章与收藏。",
+  active = '',
+} = Astro.props;
+
+const pageTitle = title ? `${title} · Eleanor Liu` : 'Eleanor Liu · Journey, Works, Writing & Library';
+
+// 联系方式：LinkedIn 链接请换成你自己的主页地址
+const contacts = [
+  { emoji: '📮', label: 'Email', href: 'mailto:liuyujia737@gmail.com', text: 'liuyujia737@gmail.com' },
+  { emoji: '💼', label: 'LinkedIn', href: 'https://www.linkedin.com/in/YOUR-LINKEDIN-ID', text: 'linkedin.com/in/YOUR-LINKEDIN-ID' },
+  { emoji: '🐙', label: 'GitHub', href: 'https://github.com/eleanorliu737', text: '@eleanorliu737' },
+];
+
+const nav = [
+  { href: '/', key: 'home', zh: '首页', en: 'Home' },
+  { href: '/journey/', key: 'journey', zh: '轨迹', en: 'Journey' },
+  { href: '/works/', key: 'works', zh: '作品', en: 'Works' },
+  { href: '/writing/', key: 'writing', zh: '文章', en: 'Writing' },
+  { href: '/library/', key: 'library', zh: '收藏', en: 'Library' },
+  { href: '/about/', key: 'about', zh: '关于', en: 'About' },
+];
+---
+
+<!doctype html>
+<html lang="en" data-lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <title>{pageTitle}</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌱</text></svg>"
+    />
+    <script is:inline>
+      // 在页面渲染前恢复上次的语言选择，避免闪烁；默认英文
+      (function () {
+        var lang = 'en';
+        try {
+          lang = localStorage.getItem('site-lang') || 'en';
+        } catch (e) {}
+        document.documentElement.dataset.lang = lang;
+        document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+      })();
+    </script>
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="logo-wrap">
+        <button class="logo" id="logo-btn" type="button" aria-haspopup="true" aria-expanded="false">
+          Eleanor<span class="logo-dot">.</span>Liu <span class="logo-caret">▾</span>
+        </button>
+        <div class="contact-pop" id="contact-pop" hidden>
+          <p class="contact-title">
+            <span class="lang-zh">联系我 👋</span><span class="lang-en">Say hi 👋</span>
+          </p>
+          {
+            contacts.map((c) => (
+              <a
+                class="contact-item"
+                href={c.href}
+                target={c.href.startsWith('mailto:') ? undefined : '_blank'}
+                rel="noopener"
+              >
+                <span class="contact-emoji">{c.emoji}</span>
+                <span class="contact-label">{c.label}</span>
+                <span class="contact-text">{c.text}</span>
+              </a>
+            ))
+          }
+        </div>
+      </div>
+      <div class="header-right">
+        <nav class="site-nav">
+          {
+            nav.map((item) => (
+              <a href={item.href} class:list={['nav-link', { active: active === item.key }]}>
+                <span class="lang-zh">{item.zh}</span>
+                <span class="lang-en">{item.en}</span>
+              </a>
+            ))
+          }
+        </nav>
+        <button id="lang-toggle" class="lang-toggle" type="button" aria-label="切换语言 / Switch language">
+          <span class="lang-opt" data-value="en">EN</span>
+          <span class="lang-opt" data-value="zh">中</span>
+        </button>
+      </div>
+    </header>
+
+    <main class="site-main">
+      <slot />
+    </main>
+
+    <footer class="site-footer">
+      <p>
+        © 2026 Eleanor Liu · Built with
+        <a href="https://astro.build" target="_blank" rel="noopener">Astro</a>
+        <span class="lang-zh">& 好奇心</span><span class="lang-en">& curiosity</span>
+      </p>
+      <p>
+        🚧 <span class="lang-zh">本站长期施工中</span><span class="lang-en">Under lifelong construction</span>
+      </p>
+    </footer>
+
+    <script is:inline>
+      // 左上角 logo：点击弹出/收起联系方式卡片；点击别处或按 Esc 关闭
+      (function () {
+        var btn = document.getElementById('logo-btn');
+        var pop = document.getElementById('contact-pop');
+        function setOpen(open) {
+          pop.hidden = !open;
+          btn.setAttribute('aria-expanded', String(open));
+        }
+        btn.addEventListener('click', function (e) {
+          e.stopPropagation();
+          setOpen(pop.hidden);
+        });
+        document.addEventListener('click', function (e) {
+          if (!pop.hidden && !pop.contains(e.target)) setOpen(false);
+        });
+        document.addEventListener('keydown', function (e) {
+          if (e.key === 'Escape') setOpen(false);
+        });
+      })();
+
+      document.getElementById('lang-toggle').addEventListener('click', function () {
+        var next = document.documentElement.dataset.lang === 'en' ? 'zh' : 'en';
+        document.documentElement.dataset.lang = next;
+        document.documentElement.lang = next === 'zh' ? 'zh-CN' : 'en';
+        try {
+          localStorage.setItem('site-lang', next);
+        } catch (e) {}
+      });
+    </script>
+  </body>
+</html>

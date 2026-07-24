@@ -1,0 +1,35 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+
+const posts = (await getCollection('posts', ({ data }) => !data.draft)).sort(
+  (a, b) => b.data.date.valueOf() - a.data.date.valueOf()
+);
+
+const fmt = (d: Date) => d.toISOString().slice(0, 10);
+---
+
+<Base title="文章 Writing" active="writing">
+  <p class="kicker">03 · Writing</p>
+  <h1><span class="lang-zh">文章</span><span class="lang-en">Writing</span></h1>
+  <p class="lede lang-zh">做自己的 journalist：不追热点，只发表自己真正想清楚了的东西。中文英文都有，看语言标签。</p>
+  <p class="lede lang-en">Being my own journalist — publishing only what I've actually thought through. In Chinese and English; check the language badge.</p>
+
+  <ul class="post-list">
+    {
+      posts.map((post) => (
+        <li>
+          <a class="post-title" href={`/writing/${post.id}/`}>{post.data.title}</a>
+          <div class="post-meta">
+            <span>{fmt(post.data.date)}</span>
+            <span class="badge badge-lang">{post.data.lang === 'zh' ? '中文' : 'EN'}</span>
+            {post.data.tags.map((t) => (
+              <span class="badge">#{t}</span>
+            ))}
+          </div>
+          {post.data.summary && <p class="post-summary">{post.data.summary}</p>}
+        </li>
+      ))
+    }
+  </ul>
+</Base>

@@ -1,0 +1,56 @@
+---
+import Base from '../layouts/Base.astro';
+import { projects, ideas } from '../data/projects';
+---
+
+<Base title="作品与想法 Works" active="works">
+  <p class="kicker">02 · Works & Ideas</p>
+  <h1><span class="lang-zh">作品与想法</span><span class="lang-en">Works & Ideas</span></h1>
+  <p class="lede lang-zh">想法不值钱，做出来才算。这里是我做出来的东西，以及还在排队等着被做出来的想法。</p>
+  <p class="lede lang-en">Ideas are cheap; shipped things count. Here's what I've built — and what's queuing up in my head.</p>
+
+  <div class="project-grid">
+    {
+      projects.map((p) => (
+        <article class="project">
+          <div class="project-top">
+            <h2>
+              {p.emoji}
+              <a href={p.link}>
+                <span class="lang-zh">{p.name}</span>
+                <span class="lang-en">{p.nameEn}</span>
+              </a>
+            </h2>
+            <span class="project-status">
+              <span class="lang-zh">{p.status}</span>
+              <span class="lang-en">{p.statusEn}</span>
+            </span>
+          </div>
+          <p class="lang-zh">{p.desc}</p>
+          <p class="lang-en">{p.descEn}</p>
+          <ul class="stack">
+            {p.stack.map((s) => (
+              <li>{s}</li>
+            ))}
+          </ul>
+        </article>
+      ))
+    }
+  </div>
+
+  <h2><span class="lang-zh">冒泡中的想法</span><span class="lang-en">Ideas in the making</span></h2>
+  <ul class="idea-list">
+    {
+      ideas.map((i) => (
+        <li>
+          <p class="lang-zh">
+            {i.emoji} {i.text}
+          </p>
+          <p class="lang-en">
+            {i.emoji} {i.textEn}
+          </p>
+        </li>
+      ))
+    }
+  </ul>
+</Base>

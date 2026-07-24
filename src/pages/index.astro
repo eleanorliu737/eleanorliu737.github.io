@@ -1,0 +1,72 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../layouts/Base.astro';
+
+const posts = (await getCollection('posts', ({ data }) => !data.draft))
+  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf())
+  .slice(0, 3);
+
+const fmt = (d: Date) => d.toISOString().slice(0, 10);
+---
+
+<Base active="home">
+  <section class="hero">
+    <p class="kicker">A personal corner of the internet</p>
+    <h1>
+      <span class="lang-zh">你好，我是 Eleanor</span><span class="lang-en">Hi, I'm Eleanor</span>
+      <span class="wave">👋</span>
+    </h1>
+    <p class="lede lang-zh">
+      这里是我在互联网上的自留地：记录人生轨迹，陈列想法与作品，发表我写的文章，也收藏我在网上遇到的好东西。
+    </p>
+    <p class="lede lang-en">
+      This is my little plot of land on the internet — my journey, my ideas and works, my
+      writing, and a library of great things I've found along the way.
+    </p>
+  </section>
+
+  <div class="card-grid">
+    <a class="card" href="/journey/">
+      <span class="card-en lang-zh">Journey</span>
+      <h2>🧭 <span class="lang-zh">轨迹</span><span class="lang-en">Journey</span></h2>
+      <p class="lang-zh">一条有趣的性格叙事线：我从哪里来，绕了什么路，要到哪里去。</p>
+      <p class="lang-en">A narrative with personality: where I came from, the detours I took, and where I'm headed.</p>
+    </a>
+    <a class="card" href="/works/">
+      <span class="card-en lang-zh">Works & Ideas</span>
+      <h2>🛠️ <span class="lang-zh">作品与想法</span><span class="lang-en">Works & Ideas</span></h2>
+      <p class="lang-zh">做出来的东西，和还在脑子里冒泡的东西。</p>
+      <p class="lang-en">Things I've built, and things still bubbling in my head.</p>
+    </a>
+    <a class="card" href="/writing/">
+      <span class="card-en lang-zh">Writing</span>
+      <h2>✍️ <span class="lang-zh">文章</span><span class="lang-en">Writing</span></h2>
+      <p class="lang-zh">做自己的 journalist：想法成熟一个，就发表一个。</p>
+      <p class="lang-en">Being my own journalist: one idea matures, one gets published.</p>
+    </a>
+    <a class="card" href="/library/">
+      <span class="card-en lang-zh">Library</span>
+      <h2>📚 <span class="lang-zh">收藏</span><span class="lang-en">Library</span></h2>
+      <p class="lang-zh">互联网上的好文章值得一个家，按收藏夹分门别类。</p>
+      <p class="lang-en">Great reads deserve a home — sorted into folders, each with a note.</p>
+    </a>
+  </div>
+
+  <section>
+    <h2><span class="lang-zh">最新文章</span><span class="lang-en">Latest writing</span></h2>
+    <ul class="post-list">
+      {
+        posts.map((post) => (
+          <li>
+            <a class="post-title" href={`/writing/${post.id}/`}>{post.data.title}</a>
+            <div class="post-meta">
+              <span>{fmt(post.data.date)}</span>
+              <span class="badge badge-lang">{post.data.lang === 'zh' ? '中文' : 'EN'}</span>
+            </div>
+            {post.data.summary && <p class="post-summary">{post.data.summary}</p>}
+          </li>
+        ))
+      }
+    </ul>
+  </section>
+</Base>

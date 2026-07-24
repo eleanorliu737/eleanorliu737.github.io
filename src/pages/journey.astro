@@ -1,0 +1,34 @@
+---
+import Base from '../layouts/Base.astro';
+import { chapters } from '../data/journey';
+---
+
+<Base title="轨迹 Journey" active="journey">
+  <p class="kicker">01 · Journey</p>
+  <h1><span class="lang-zh">轨迹</span><span class="lang-en">The Journey</span></h1>
+  <p class="lede lang-zh">人生不是简历上的一行行时间，而是一个有性格的故事。这是我的版本——包括那些绕路的部分。</p>
+  <p class="lede lang-en">A life is not bullet points on a résumé; it's a story with a personality — detours included.</p>
+
+  <ol class="timeline">
+    {
+      chapters.map((c) => (
+        <li class="chapter">
+          <div class="chapter-marker">{c.emoji}</div>
+          <div class="chapter-body">
+            <p class="chapter-period">{c.period}</p>
+            <h2>
+              <span class="lang-zh">{c.title}</span>
+              <span class="lang-en">{c.titleEn}</span>
+            </h2>
+            <p class="chapter-tagline">
+              <span class="lang-zh">{c.tagline}</span>
+              <span class="lang-en">{c.taglineEn}</span>
+            </p>
+            <p class="lang-zh">{c.body}</p>
+            <p class="lang-en">{c.bodyEn}</p>
+          </div>
+        </li>
+      ))
+    }
+  </ol>
+</Base>

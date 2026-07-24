@@ -7,5 +7,4 @@ tags: [随手记]
 draft: false
 ---
 
-从这里开始写……
-Claude Fable 5换成credits后消耗的好快
+从这里开始写……Claude Fable 5换成credits后消耗的好快

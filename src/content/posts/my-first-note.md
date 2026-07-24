@@ -8,3 +8,4 @@ draft: false
 ---
 
 从这里开始写……
+Claude Fable 5换成credits后消耗的好快

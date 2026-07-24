@@ -1,6 +1,6 @@
 # 🌱 Eleanor's Personal Site
 
-A hand-built personal website: life journey, works & ideas, writing, and a public library of great reads. Built with [Astro](https://astro.build) — no database, no CMS, everything is Markdown and tiny data files.
+A hand-built personal website: life journey, works & ideas, writing, and a public library of great reads. Built with [Astro] — no database, no CMS, everything is Markdown and tiny data files.
 
 > 手工搭建的个人网站：人生轨迹、作品与想法、文章写作、公开收藏馆。基于 Astro，没有数据库、没有后台，所有内容都是 Markdown 和小数据文件。
 

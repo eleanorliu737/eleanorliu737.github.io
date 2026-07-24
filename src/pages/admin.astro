@@ -1,0 +1,398 @@
+---
+// 站内编辑器（Eleanor Login）：/admin/
+// 原理：这是纯静态站，没有服务器。编辑器用 GitHub API 直接向仓库提交修改，
+// 保存 = 自动 commit + push，网站随后由 Actions 自动重新构建发布。
+// 密码机制：一个仅限本仓库的 GitHub fine-grained 令牌，用你设置的密码在浏览器端
+// 加密（PBKDF2 + AES-GCM）后存为 public/admin-vault.json。登录时输入密码在浏览器端
+// 解密出令牌。密码与明文令牌不会离开浏览器。
+import '../styles/global.css';
+
+const OWNER = 'eleanorliu737';
+const REPO = 'eleanorliu737.github.io';
+const BRANCH = 'main';
+---
+
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Eleanor Login · 站点编辑</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✏️</text></svg>"
+    />
+  </head>
+  <body>
+    <main class="site-main admin-main">
+      <header class="admin-header">
+        <a class="admin-logo" href="/">Eleanor<span class="logo-dot">.</span>Liu</a>
+        <span class="admin-tag">✏️ EDIT MODE</span>
+        <button id="btn-logout" class="admin-btn ghost" type="button" hidden>退出登录</button>
+      </header>
+
+      <section id="view-loading">
+        <p class="admin-msg">加载中…</p>
+      </section>
+
+      <section id="view-setup" class="admin-card" hidden>
+        <h1>首次配置</h1>
+        <p class="admin-hint">
+          还没有设置过编辑密码。请粘贴你的 GitHub 令牌（仅限本仓库、Contents 读写权限的
+          fine-grained token），并设置一个今后登录用的密码。令牌会以加密形式存入仓库；
+          <strong>密码和明文令牌不会离开你的浏览器</strong>。
+        </p>
+        <label>GitHub 令牌 <input id="setup-token" type="password" placeholder="github_pat_..." autocomplete="off" /></label>
+        <label>设置密码（建议 12 位以上，越长越安全） <input id="setup-pass" type="password" autocomplete="new-password" /></label>
+        <label>确认密码 <input id="setup-pass2" type="password" autocomplete="new-password" /></label>
+        <button id="btn-setup" class="admin-btn" type="button">加密并保存</button>
+        <p id="setup-msg" class="admin-msg"></p>
+      </section>
+
+      <section id="view-login" class="admin-card" hidden>
+        <h1>Eleanor Login</h1>
+        <label>密码 <input id="login-pass" type="password" autocomplete="current-password" /></label>
+        <button id="btn-login" class="admin-btn" type="button">进入编辑</button>
+        <p id="login-msg" class="admin-msg"></p>
+        <p class="admin-hint"><button id="btn-reset" class="link-btn" type="button">忘记密码？用新令牌重新配置</button></p>
+      </section>
+
+      <section id="view-editor" hidden>
+        <div class="editor-grid">
+          <aside class="editor-side">
+            <p class="editor-side-title">📝 文章 / 随手记</p>
+            <ul id="post-list" class="editor-files"></ul>
+            <button id="btn-new" class="admin-btn small" type="button">➕ 新文章</button>
+            <p class="editor-side-title">🗂 站点数据</p>
+            <ul class="editor-files">
+              <li><button class="file-btn" type="button" data-path="src/data/journey.ts">轨迹 journey.ts</button></li>
+              <li><button class="file-btn" type="button" data-path="src/data/projects.ts">作品 projects.ts</button></li>
+              <li><button class="file-btn" type="button" data-path="src/data/bookmarks.ts">收藏 bookmarks.ts</button></li>
+            </ul>
+          </aside>
+          <div class="editor-pane">
+            <div class="editor-pane-head">
+              <span id="current-file" class="editor-filename">← 从左侧选择要编辑的文件</span>
+              <button id="btn-save" class="admin-btn" type="button" disabled>保存并发布</button>
+            </div>
+            <textarea id="editor-text" spellcheck="false" placeholder="选择一个文件开始编辑…"></textarea>
+            <p id="editor-msg" class="admin-msg"></p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <style>
+      .admin-main { padding-top: 1.5rem; }
+      .admin-header { display: flex; align-items: baseline; gap: 1rem; margin-bottom: 2rem; flex-wrap: wrap; }
+      .admin-logo { font-family: var(--mono); font-weight: 700; font-size: 1.05rem; color: var(--ink); }
+      .admin-logo:hover { text-decoration: none; color: var(--accent); }
+      .admin-tag {
+        font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.14em;
+        color: var(--accent); border: 1px solid var(--accent); border-radius: 999px; padding: 0.1rem 0.6rem;
+      }
+      #btn-logout { margin-left: auto; }
+
+      .admin-card { max-width: 28rem; }
+      .admin-card h1 { font-size: 1.5rem; }
+      .admin-card label { display: block; margin: 1rem 0 0; font-size: 0.9rem; color: var(--muted); }
+      .admin-card input {
+        display: block; width: 100%; margin-top: 0.35rem; padding: 0.55rem 0.7rem;
+        font-family: var(--mono); font-size: 0.95rem; color: var(--ink);
+        background: var(--bg-card); border: 1px solid var(--line); border-radius: 8px; box-sizing: border-box;
+      }
+      .admin-card input:focus { outline: none; border-color: var(--accent); }
+
+      .admin-btn {
+        margin-top: 1.2rem; padding: 0.5rem 1.2rem; font-size: 0.95rem; font-family: inherit;
+        color: #fff; background: var(--accent); border: none; border-radius: 8px; cursor: pointer;
+      }
+      .admin-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+      .admin-btn.small { margin-top: 0.6rem; font-size: 0.85rem; padding: 0.35rem 0.8rem; }
+      .admin-btn.ghost { background: none; color: var(--muted); border: 1px solid var(--line); }
+      .admin-btn.ghost:hover { color: var(--accent); border-color: var(--accent); }
+      .link-btn { background: none; border: none; padding: 0; color: var(--accent); cursor: pointer; font: inherit; font-size: 0.85rem; }
+
+      .admin-msg { color: var(--muted); font-size: 0.9rem; min-height: 1.4em; margin: 0.8rem 0 0; }
+      .admin-hint { color: var(--muted); font-size: 0.9rem; line-height: 1.7; }
+
+      .editor-grid { display: grid; grid-template-columns: 16rem 1fr; gap: 2rem; align-items: start; }
+      @media (max-width: 760px) { .editor-grid { grid-template-columns: 1fr; } }
+
+      .editor-side-title {
+        font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.14em;
+        text-transform: uppercase; color: var(--accent); margin: 1.4rem 0 0.5rem;
+      }
+      .editor-side-title:first-child { margin-top: 0; }
+      .editor-files { list-style: none; margin: 0; padding: 0; }
+      .editor-files li { margin: 0.15rem 0; }
+      .file-btn {
+        display: block; width: 100%; text-align: left; background: none; border: none;
+        padding: 0.3rem 0.5rem; border-radius: 6px; color: var(--ink); cursor: pointer;
+        font: inherit; font-size: 0.88rem;
+      }
+      .file-btn:hover { background: var(--accent-soft); }
+      .file-btn.active { background: var(--accent); color: #fff; }
+
+      .editor-pane-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+      .editor-pane-head .admin-btn { margin-top: 0; }
+      .editor-filename { font-family: var(--mono); font-size: 0.85rem; color: var(--muted); word-break: break-all; }
+      #editor-text {
+        width: 100%; min-height: 62vh; margin-top: 0.8rem; padding: 1rem 1.1rem; box-sizing: border-box;
+        font-family: var(--mono); font-size: 0.9rem; line-height: 1.7; color: var(--ink);
+        background: var(--bg-card); border: 1px solid var(--line); border-radius: 10px; resize: vertical;
+      }
+      #editor-text:focus { outline: none; border-color: var(--accent); }
+    </style>
+
+    <script define:vars={{ OWNER, REPO, BRANCH }}>
+      const API = 'https://api.github.com';
+      const VAULT_PATH = 'public/admin-vault.json';
+      const enc = new TextEncoder();
+      const $ = (id) => document.getElementById(id);
+      const views = ['view-loading', 'view-setup', 'view-login', 'view-editor'];
+
+      let token = localStorage.getItem('admin-token') || '';
+      let currentPath = '';
+      let currentSha = '';
+
+      function show(view) {
+        views.forEach((v) => ($(v).hidden = v !== view));
+        $('btn-logout').hidden = view !== 'view-editor';
+      }
+
+      // ---------- base64 / 加密工具 ----------
+      function bytesToB64(bytes) {
+        let bin = '';
+        new Uint8Array(bytes).forEach((b) => (bin += String.fromCharCode(b)));
+        return btoa(bin);
+      }
+      function b64ToBytes(b64) {
+        const bin = atob(b64.replace(/\s/g, ''));
+        return Uint8Array.from(bin, (c) => c.charCodeAt(0));
+      }
+      const utf8ToB64 = (str) => bytesToB64(enc.encode(str));
+      const b64ToUtf8 = (b64) => new TextDecoder().decode(b64ToBytes(b64));
+
+      async function deriveKey(pass, salt, iter) {
+        const km = await crypto.subtle.importKey('raw', enc.encode(pass), 'PBKDF2', false, ['deriveKey']);
+        return crypto.subtle.deriveKey(
+          { name: 'PBKDF2', salt, iterations: iter, hash: 'SHA-256' },
+          km,
+          { name: 'AES-GCM', length: 256 },
+          false,
+          ['encrypt', 'decrypt']
+        );
+      }
+      async function encryptToken(tok, pass) {
+        const salt = crypto.getRandomValues(new Uint8Array(16));
+        const iv = crypto.getRandomValues(new Uint8Array(12));
+        const iter = 600000;
+        const key = await deriveKey(pass, salt, iter);
+        const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, enc.encode(tok));
+        return { v: 1, kdf: 'PBKDF2-SHA256', iter, salt: bytesToB64(salt), iv: bytesToB64(iv), ct: bytesToB64(ct) };
+      }
+      async function decryptToken(vault, pass) {
+        const key = await deriveKey(pass, b64ToBytes(vault.salt), vault.iter);
+        const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64ToBytes(vault.iv) }, key, b64ToBytes(vault.ct));
+        return new TextDecoder().decode(pt);
+      }
+
+      // ---------- GitHub API ----------
+      function gh(path, opts = {}) {
+        return fetch(API + path, {
+          ...opts,
+          headers: {
+            Authorization: 'Bearer ' + token,
+            Accept: 'application/vnd.github+json',
+            ...(opts.headers || {}),
+          },
+        });
+      }
+      async function tokenValid() {
+        if (!token) return false;
+        try {
+          const r = await gh(`/repos/${OWNER}/${REPO}`);
+          return r.ok;
+        } catch (e) {
+          return false;
+        }
+      }
+      async function loadVault() {
+        // 先读站点静态文件；若刚配置完还没部署好，回退读 GitHub raw
+        const urls = [
+          `/admin-vault.json?t=${Date.now()}`,
+          `https://raw.githubusercontent.com/${OWNER}/${REPO}/${BRANCH}/public/admin-vault.json?t=${Date.now()}`,
+        ];
+        for (const url of urls) {
+          try {
+            const r = await fetch(url, { cache: 'no-store' });
+            if (r.ok) return await r.json();
+          } catch (e) {}
+        }
+        return null;
+      }
+      async function getFile(path) {
+        const r = await gh(`/repos/${OWNER}/${REPO}/contents/${path}?ref=${BRANCH}&t=${Date.now()}`);
+        if (!r.ok) throw new Error('读取失败 HTTP ' + r.status);
+        const j = await r.json();
+        return { text: b64ToUtf8(j.content), sha: j.sha };
+      }
+      async function putFile(path, text, message, sha) {
+        const body = { message, branch: BRANCH, content: utf8ToB64(text) };
+        if (sha) body.sha = sha;
+        const r = await gh(`/repos/${OWNER}/${REPO}/contents/${path}`, { method: 'PUT', body: JSON.stringify(body) });
+        if (!r.ok) {
+          const j = await r.json().catch(() => ({}));
+          throw new Error('保存失败 HTTP ' + r.status + (j.message ? '：' + j.message : ''));
+        }
+        return (await r.json()).content.sha;
+      }
+
+      // ---------- 页面流程 ----------
+      async function init() {
+        if (await tokenValid()) return enterEditor();
+        token = '';
+        const vault = await loadVault();
+        show(vault ? 'view-login' : 'view-setup');
+      }
+
+      $('btn-setup').addEventListener('click', async () => {
+        const tok = $('setup-token').value.trim();
+        const p1 = $('setup-pass').value;
+        const p2 = $('setup-pass2').value;
+        const msg = $('setup-msg');
+        if (!tok) return (msg.textContent = '请粘贴 GitHub 令牌');
+        if (p1.length < 8) return (msg.textContent = '密码至少 8 位（建议 12 位以上）');
+        if (p1 !== p2) return (msg.textContent = '两次输入的密码不一致');
+        msg.textContent = '验证令牌…';
+        token = tok;
+        if (!(await tokenValid())) {
+          token = '';
+          return (msg.textContent = '令牌无效，或没有本仓库的权限');
+        }
+        try {
+          msg.textContent = '加密并写入仓库…';
+          const vault = await encryptToken(tok, p1);
+          let sha;
+          try { sha = (await getFile(VAULT_PATH)).sha; } catch (e) {}
+          await putFile(VAULT_PATH, JSON.stringify(vault, null, 2), 'Set up admin vault', sha);
+          localStorage.setItem('admin-token', tok);
+          msg.textContent = '';
+          enterEditor();
+        } catch (e) {
+          msg.textContent = '❌ ' + e.message;
+        }
+      });
+
+      $('btn-login').addEventListener('click', doLogin);
+      $('login-pass').addEventListener('keydown', (e) => { if (e.key === 'Enter') doLogin(); });
+      async function doLogin() {
+        const msg = $('login-msg');
+        msg.textContent = '验证中…';
+        try {
+          const vault = await loadVault();
+          if (!vault) return (msg.textContent = '找不到配置，请先完成首次配置');
+          const tok = await decryptToken(vault, $('login-pass').value);
+          token = tok;
+          if (!(await tokenValid())) {
+            token = '';
+            return (msg.textContent = '密码正确，但令牌已失效——请用新令牌重新配置');
+          }
+          localStorage.setItem('admin-token', tok);
+          msg.textContent = '';
+          enterEditor();
+        } catch (e) {
+          msg.textContent = '密码不对（解密失败）';
+        }
+      }
+
+      $('btn-reset').addEventListener('click', () => show('view-setup'));
+      $('btn-logout').addEventListener('click', () => {
+        localStorage.removeItem('admin-token');
+        token = '';
+        location.reload();
+      });
+
+      // ---------- 编辑器 ----------
+      async function enterEditor() {
+        show('view-editor');
+        refreshPosts();
+      }
+      async function refreshPosts() {
+        const r = await gh(`/repos/${OWNER}/${REPO}/contents/src/content/posts?ref=${BRANCH}`);
+        const list = $('post-list');
+        list.innerHTML = '';
+        if (!r.ok) return;
+        for (const f of await r.json()) {
+          const li = document.createElement('li');
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'file-btn';
+          btn.dataset.path = f.path;
+          btn.textContent = f.name;
+          li.appendChild(btn);
+          list.appendChild(li);
+        }
+      }
+      document.addEventListener('click', (e) => {
+        const btn = e.target.closest('.file-btn');
+        if (btn) openFile(btn.dataset.path, btn);
+      });
+      async function openFile(path, btn) {
+        $('editor-msg').textContent = '读取中…';
+        try {
+          const f = await getFile(path);
+          currentPath = path;
+          currentSha = f.sha;
+          $('editor-text').value = f.text;
+          $('current-file').textContent = path + (path.endsWith('.ts') ? '　⚠ 注意保持代码格式（引号、逗号、括号）' : '');
+          $('btn-save').disabled = false;
+          $('editor-msg').textContent = '';
+          document.querySelectorAll('.file-btn.active').forEach((b) => b.classList.remove('active'));
+          if (btn) btn.classList.add('active');
+        } catch (e) {
+          $('editor-msg').textContent = '❌ ' + e.message;
+        }
+      }
+      $('btn-save').addEventListener('click', async () => {
+        if (!currentPath) return;
+        const msg = $('editor-msg');
+        msg.textContent = '保存中…';
+        $('btn-save').disabled = true;
+        try {
+          currentSha = await putFile(currentPath, $('editor-text').value, `Update ${currentPath} via site editor`, currentSha);
+          msg.textContent = '✅ 已保存并推送，网站将在 1-2 分钟后自动更新';
+        } catch (e) {
+          msg.textContent = '❌ ' + e.message;
+        }
+        $('btn-save').disabled = false;
+      });
+      $('btn-new').addEventListener('click', async () => {
+        const name = prompt('新文章的文件名（英文或拼音，将成为网址的一部分，例如 my-first-note）：');
+        if (!name) return;
+        const slug = name.trim().toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '');
+        if (!slug) return alert('文件名无效，请用英文字母、数字或短横线');
+        const path = `src/content/posts/${slug}.md`;
+        const today = new Date().toISOString().slice(0, 10);
+        const template = `---\ntitle: 新文章标题\ndate: ${today}\nlang: zh\nsummary: 一句话摘要。\ntags: [随手记]\ndraft: false\n---\n\n从这里开始写……\n`;
+        $('editor-msg').textContent = '创建中…';
+        try {
+          const sha = await putFile(path, template, `New post: ${slug}`, undefined);
+          await refreshPosts();
+          currentPath = path;
+          currentSha = sha;
+          $('editor-text').value = template;
+          $('current-file').textContent = path;
+          $('btn-save').disabled = false;
+          $('editor-msg').textContent = '✅ 已创建，写完记得点「保存并发布」';
+        } catch (e) {
+          $('editor-msg').textContent = '❌ ' + e.message;
+        }
+      });
+
+      init();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,48 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../../../layouts/Base.astro';
+
+export async function getStaticPaths() {
+  const posts = await getCollection('posts', ({ data }) => !data.draft);
+  const tags = new Set<string>();
+  posts.forEach((p) => p.data.tags.forEach((t) => tags.add(t)));
+  return [...tags].map((tag) => ({ params: { tag } }));
+}
+
+const { tag } = Astro.params;
+const posts = (await getCollection('posts', ({ data }) => !data.draft && data.tags.includes(tag!)))
+  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+
+const fmt = (d: Date) => d.toISOString().slice(0, 10);
+---
+
+<Base title={`#${tag}`} active="writing">
+  <p class="back-link" style="margin-bottom:1rem">
+    <a href="/writing/">
+      <span class="lang-zh">← 返回文章列表</span>
+      <span class="lang-en">← Back to writing</span>
+    </a>
+  </p>
+  <p class="kicker">Topic</p>
+  <h1>#{tag}</h1>
+  <p class="lede">
+    <span class="lang-zh">共 {posts.length} 篇</span>
+    <span class="lang-en">{posts.length} post{posts.length === 1 ? '' : 's'}</span>
+  </p>
+
+  <ul class="post-list">
+    {
+      posts.map((post) => (
+        <li>
+          <a class="post-title" href={`/writing/${post.id}/`}>{post.data.title}</a>
+          <div class="post-meta">
+            <span>{fmt(post.data.date)}</span>
+            <span class="badge badge-lang">{post.data.lang === 'zh' ? '中文' : 'EN'}</span>
+            {post.data.translation && <span class="badge badge-lang">双语</span>}
+          </div>
+          {post.data.summary && <p class="post-summary">{post.data.summary}</p>}
+        </li>
+      ))
+    }
+  </ul>
+</Base>

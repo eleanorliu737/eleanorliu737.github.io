@@ -64,6 +64,7 @@ const BRANCH = 'main';
           <button class="tab-btn" type="button" data-tab="bookmarks">📚 收藏好文章</button>
           <button class="tab-btn" type="button" data-tab="journey">🧭 人生轨迹</button>
           <button class="tab-btn" type="button" data-tab="works">🛠 作品与想法</button>
+          <button class="tab-btn" type="button" data-tab="jobtrack">🎯 求职打卡</button>
         </nav>
 
         <!-- ============ 文章 ============ -->
@@ -95,9 +96,33 @@ const BRANCH = 'main';
               <label class="f-field"><span class="f-label">标签（用逗号分开）</span>
                 <input id="post-tags" class="f-input" type="text" placeholder="例如：随手记, 生活" />
               </label>
-              <label class="f-field"><span class="f-label">正文</span>
-                <textarea id="post-body" class="f-input f-body" placeholder="直接打字就行。&#10;&#10;空一行 = 分新段落。&#10;行首写「## 」 = 小标题。&#10;两个星号包住文字 = **加粗**。"></textarea>
+              <div class="body-toolbar">
+                <span class="f-label">正文</span>
+                <button id="btn-post-image" class="admin-btn ghost small" type="button">🖼 插入图片</button>
+                <input id="post-image-file" type="file" accept="image/*" hidden />
+              </div>
+              <textarea id="post-body" class="f-input f-body" placeholder="直接打字就行，写出来什么样、发布后就显示什么样。&#10;&#10;换行 = 换行显示。&#10;行首写「## 」 = 小标题。&#10;两个星号包住文字 = **加粗**。&#10;插入图片请用上面的「🖼 插入图片」按钮。"></textarea>
+              <label class="f-check">
+                <input type="checkbox" id="post-featured" /> 🏠 在首页「精选文章」里显示这篇
               </label>
+              <div class="trans-box">
+                <div class="trans-head">
+                  <span class="f-label">🌐 英文翻译（有翻译时，文章页会左右对照显示）</span>
+                  <button id="btn-translate" class="admin-btn ghost small" type="button">✨ AI 翻译 + 审计</button>
+                </div>
+                <textarea
+                  id="post-translation"
+                  class="f-input"
+                  placeholder="点上面的按钮自动翻译（会先翻译、再逐段审计意义损失、再修订）。结果可以手动修改；留空则文章只显示原文。"
+                ></textarea>
+                <p id="trans-audit" class="trans-audit" hidden></p>
+                <div id="apikey-row" hidden>
+                  <label class="f-field"><span class="f-label">Claude API Key（只保存在本浏览器；在 console.anthropic.com 创建）</span>
+                    <input id="apikey-input" class="f-input" type="password" placeholder="sk-ant-..." autocomplete="off" />
+                  </label>
+                  <button id="btn-apikey-save" class="admin-btn small" type="button">保存 Key 并继续</button>
+                </div>
+              </div>
               <div class="form-actions">
                 <button id="btn-post-save" class="admin-btn" type="button">发布这篇文章</button>
                 <button id="btn-post-delete" class="admin-btn danger" type="button" hidden>删除这篇文章</button>
@@ -172,10 +197,38 @@ const BRANCH = 'main';
           </div>
           <p id="wk-msg" class="admin-msg"></p>
         </div>
+
+        <!-- ============ 求职打卡 ============ -->
+        <div id="tab-jobtrack" class="tab-panel" hidden>
+          <div class="form-panel add-box">
+            <p class="box-title">🎯 记录一天的求职进展</p>
+            <p class="admin-hint">记录会显示在网站「轨迹」页底部的求职足迹日历上。</p>
+            <div class="f-row">
+              <label class="f-field f-narrow"><span class="f-label">日期</span>
+                <input id="jt-date" type="date" class="f-input" />
+              </label>
+              <label class="f-field f-narrow"><span class="f-label">投出简历（份）</span>
+                <input id="jt-applied" type="number" min="0" class="f-input" value="0" />
+              </label>
+              <label class="f-field f-narrow"><span class="f-label">收到回复（个）</span>
+                <input id="jt-replies" type="number" min="0" class="f-input" value="0" />
+              </label>
+            </div>
+            <label class="f-check"><input type="checkbox" id="jt-interview" /> 📞 这天收到或参加了面试</label>
+            <div class="form-actions">
+              <button id="btn-jt-save" class="admin-btn" type="button">记录并发布</button>
+            </div>
+            <p id="jt-msg" class="admin-msg"></p>
+          </div>
+          <p class="side-caption">已有记录（点日期可修改，✕ 删除）：</p>
+          <ul id="jt-list" class="bm-items"></ul>
+        </div>
       </section>
     </main>
 
-    <style>
+    <style is:global>
+      /* is:global 是必须的：编辑器界面大量由 JS 动态生成，
+         Astro 默认的组件作用域样式对动态元素不生效 */
       .admin-main { padding-top: 1.5rem; }
       .admin-header { display: flex; align-items: baseline; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
       .admin-logo { font-family: var(--mono); font-weight: 700; font-size: 1.05rem; color: var(--ink); }
@@ -254,6 +307,20 @@ const BRANCH = 'main';
       .f-row { display: flex; gap: 1rem; flex-wrap: wrap; }
       .f-narrow { flex: 0 0 11rem; }
       .form-actions { display: flex; gap: 0.8rem; align-items: center; flex-wrap: wrap; margin-top: 0.5rem; }
+
+      .body-toolbar { display: flex; align-items: center; justify-content: space-between; margin: 0.9rem 0 0.3rem; }
+      .body-toolbar .admin-btn { margin-top: 0; }
+      .f-check { display: flex; align-items: center; gap: 0.5rem; margin: 0.9rem 0 0; font-size: 0.92rem; cursor: pointer; }
+      .f-check input { width: 1.05rem; height: 1.05rem; accent-color: var(--accent); }
+
+      .trans-box { margin-top: 1.1rem; border: 1px dashed var(--line); border-radius: 10px; padding: 0.9rem 1rem 1rem; }
+      .trans-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: 0.4rem; }
+      .trans-head .admin-btn { margin-top: 0; }
+      .trans-box textarea { min-height: 10rem; }
+      .trans-audit {
+        white-space: pre-line; background: var(--accent-soft); border-radius: 8px;
+        padding: 0.7rem 0.9rem; font-size: 0.88rem; margin: 0.7rem 0 0; color: var(--ink);
+      }
 
       .item-card {
         background: var(--bg-card); border: 1px solid var(--line); border-radius: 12px;
@@ -398,6 +465,16 @@ const BRANCH = 'main';
         const j = await r.json();
         return { text: b64ToUtf8(j.content), sha: j.sha };
       }
+      async function putFileRaw(path, contentB64, message, sha) {
+        const body = { message, branch: BRANCH, content: contentB64 };
+        if (sha) body.sha = sha;
+        const r = await gh(`/repos/${OWNER}/${REPO}/contents/${path}`, { method: 'PUT', body: JSON.stringify(body) });
+        if (!r.ok) {
+          const j = await r.json().catch(() => ({}));
+          throw new Error('上传失败（HTTP ' + r.status + (j.message ? '：' + j.message : '') + '）');
+        }
+        return (await r.json()).content.sha;
+      }
       async function putFile(path, text, message, sha) {
         const body = { message, branch: BRANCH, content: utf8ToB64(text) };
         if (sha) body.sha = sha;
@@ -494,6 +571,7 @@ const BRANCH = 'main';
         if (name === 'bookmarks') loadBookmarks();
         if (name === 'journey') loadJourney();
         if (name === 'works') loadWorks();
+        if (name === 'jobtrack') loadJobtrack();
       }
       async function enterEditor() {
         show('view-editor');
@@ -536,13 +614,17 @@ const BRANCH = 'main';
           lang: fm.lang === 'en' ? 'en' : 'zh',
           summary: unq(fm.summary),
           tags,
+          featured: fm.featured === 'true',
+          translation: unq(fm.translation),
           body: m[2].replace(/^\r?\n/, ''),
         };
       }
       function buildPost(p) {
         const q = (s) => JSON.stringify(s || '');
         const tags = '[' + p.tags.map((t) => q(t)).join(', ') + ']';
-        return `---\ntitle: ${q(p.title)}\ndate: ${p.date}\nlang: ${p.lang}\nsummary: ${q(p.summary)}\ntags: ${tags}\ndraft: false\n---\n\n${p.body.trim()}\n`;
+        let fm = `---\ntitle: ${q(p.title)}\ndate: ${p.date}\nlang: ${p.lang}\nsummary: ${q(p.summary)}\ntags: ${tags}\nfeatured: ${p.featured ? 'true' : 'false'}\ndraft: false\n`;
+        if (p.translation && p.translation.trim()) fm += `translation: ${q(p.translation.trim())}\n`;
+        return fm + `---\n\n${p.body.trim()}\n`;
       }
       async function loadPosts() {
         const listEl = $('post-list');
@@ -589,6 +671,9 @@ const BRANCH = 'main';
         $('post-summary').value = p.summary;
         $('post-tags').value = p.tags.join(', ');
         $('post-body').value = p.body;
+        $('post-featured').checked = !!p.featured;
+        $('post-translation').value = p.translation || '';
+        $('trans-audit').hidden = true;
         $('btn-post-delete').hidden = false;
         $('btn-post-save').textContent = '保存修改并发布';
         $('post-msg').textContent = '';
@@ -606,6 +691,9 @@ const BRANCH = 'main';
         $('post-summary').value = '';
         $('post-tags').value = '随手记';
         $('post-body').value = '';
+        $('post-featured').checked = false;
+        $('post-translation').value = '';
+        $('trans-audit').hidden = true;
         $('btn-post-delete').hidden = true;
         $('btn-post-save').textContent = '发布这篇文章';
         $('post-msg').textContent = '';
@@ -623,6 +711,8 @@ const BRANCH = 'main';
           lang: $('post-lang').value,
           summary: $('post-summary').value.trim(),
           tags: $('post-tags').value.split(/[,，]/).map((s) => s.trim()).filter(Boolean),
+          featured: $('post-featured').checked,
+          translation: $('post-translation').value,
           body: $('post-body').value,
         };
         if (!data.title) return (msg.textContent = '请先给文章起个标题');
@@ -659,6 +749,129 @@ const BRANCH = 'main';
           msg.textContent = '❌ ' + e.message;
         }
       });
+
+      // ============================================================
+      // 🖼 图片上传：传到仓库 public/images/posts/，并把图片语法插入正文光标处
+      // ============================================================
+      $('btn-post-image').addEventListener('click', () => $('post-image-file').click());
+      $('post-image-file').addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        e.target.value = '';
+        if (!file) return;
+        const msg = $('post-msg');
+        if (file.size > 8 * 1024 * 1024) return (msg.textContent = '❌ 图片超过 8MB，请压缩后再上传（手机截图一般没问题）');
+        msg.textContent = '图片上传中…';
+        try {
+          const bytes = new Uint8Array(await file.arrayBuffer());
+          const b64 = bytesToB64(bytes);
+          let ext = (file.name.split('.').pop() || 'png').toLowerCase().replace(/[^a-z0-9]/g, '');
+          if (!ext) ext = 'png';
+          const stamp = new Date().toISOString().replace(/[-:TZ.]/g, '').slice(0, 14);
+          const path = `public/images/posts/img-${stamp}.${ext}`;
+          await putFileRaw(path, b64, `Upload image: img-${stamp}.${ext}`);
+          const ta = $('post-body');
+          const snippet = `\n![图片描述](/images/posts/img-${stamp}.${ext})\n`;
+          const pos = ta.selectionStart ?? ta.value.length;
+          ta.value = ta.value.slice(0, pos) + snippet + ta.value.slice(pos);
+          msg.textContent = '✅ 图片已上传并插入正文。「图片描述」几个字可以改成对图片的说明。';
+        } catch (err) {
+          msg.textContent = '❌ ' + err.message;
+        }
+      });
+
+      // ============================================================
+      // 🌐 AI 翻译 + 意义损失审计（浏览器直接调用 Claude API）
+      // ============================================================
+      const TRANSLATE_SYSTEM = [
+        '你是一位专业的中译英译者，正在翻译一位作者的个人博客文章。',
+        '流程：',
+        '1. 将文章翻译成自然、地道的英文，保留作者的个人语气和全部 Markdown 格式（标题、列表、加粗、链接、图片）。',
+        '2. 对译文做「意义损失审计」：逐段对照原文，检查漏译、误译、语气偏移、文化语境丢失、歧义引入。',
+        '3. 根据审计结果修订译文，输出最终版本。',
+        '输出 JSON：translation = 修订后的英文全文（Markdown）；audit = 简短的中文审计报告（3-6 条要点：发现了什么问题、如何处理、哪些中文韵味无法完全传达）。',
+      ].join('\n');
+
+      $('btn-apikey-save').addEventListener('click', () => {
+        const k = $('apikey-input').value.trim();
+        if (!k) return;
+        localStorage.setItem('anthropic-key', k);
+        $('apikey-row').hidden = true;
+        translatePost();
+      });
+      $('btn-translate').addEventListener('click', translatePost);
+      async function translatePost() {
+        const audit = $('trans-audit');
+        const key = localStorage.getItem('anthropic-key');
+        if (!key) {
+          $('apikey-row').hidden = false;
+          audit.hidden = false;
+          audit.textContent = '首次使用需要一个 Claude API Key（在 console.anthropic.com → API Keys 创建），填入下方并保存。Key 只存在这台浏览器里。';
+          return;
+        }
+        const bodyText = $('post-body').value;
+        if (!bodyText.trim()) {
+          audit.hidden = false;
+          audit.textContent = '正文还是空的，先写点东西再翻译。';
+          return;
+        }
+        const btn = $('btn-translate');
+        btn.disabled = true;
+        btn.textContent = '翻译并审计中…（约 1-2 分钟）';
+        audit.hidden = false;
+        audit.textContent = 'AI 正在翻译 → 审计意义损失 → 修订译文……';
+        try {
+          const r = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: {
+              'content-type': 'application/json',
+              'x-api-key': key,
+              'anthropic-version': '2023-06-01',
+              'anthropic-dangerous-direct-browser-access': 'true',
+            },
+            body: JSON.stringify({
+              model: 'claude-opus-5',
+              max_tokens: 16000,
+              system: TRANSLATE_SYSTEM,
+              output_config: {
+                format: {
+                  type: 'json_schema',
+                  schema: {
+                    type: 'object',
+                    properties: { translation: { type: 'string' }, audit: { type: 'string' } },
+                    required: ['translation', 'audit'],
+                    additionalProperties: false,
+                  },
+                },
+              },
+              messages: [
+                {
+                  role: 'user',
+                  content: `文章标题：${$('post-title').value}\n\n正文（Markdown）：\n\n${bodyText}`,
+                },
+              ],
+            }),
+          });
+          if (!r.ok) {
+            const j = await r.json().catch(() => ({}));
+            if (r.status === 401) {
+              localStorage.removeItem('anthropic-key');
+              throw new Error('API Key 无效或已过期，请重新填写');
+            }
+            throw new Error('翻译请求失败（HTTP ' + r.status + (j.error && j.error.message ? '：' + j.error.message : '') + '）');
+          }
+          const j = await r.json();
+          if (j.stop_reason === 'refusal') throw new Error('模型拒绝了这次请求，请调整内容后重试');
+          const textBlock = (j.content || []).find((b) => b.type === 'text');
+          if (!textBlock) throw new Error('没有收到翻译结果，请重试');
+          const parsed = JSON.parse(textBlock.text);
+          $('post-translation').value = parsed.translation;
+          audit.textContent = '🔍 翻译审计报告（确认无误后点「保存/发布」，翻译才会上线）：\n\n' + parsed.audit;
+        } catch (err) {
+          audit.textContent = '❌ ' + err.message;
+        }
+        btn.disabled = false;
+        btn.textContent = '✨ AI 翻译 + 审计';
+      }
 
       // ============================================================
       // 📚 收藏
@@ -937,6 +1150,75 @@ const BRANCH = 'main';
           msg.textContent = '❌ ' + e.message;
         }
         $('btn-wk-save').disabled = false;
+      });
+
+      // ============================================================
+      // 🎯 求职打卡
+      // ============================================================
+      async function loadJobtrack() {
+        const file = await getFile('src/data/jobtrack.json');
+        state.jobtrack = { sha: file.sha, data: JSON.parse(file.text) };
+        $('jt-date').value = today();
+        renderJobtrack();
+      }
+      function renderJobtrack() {
+        const list = $('jt-list');
+        list.innerHTML = '';
+        const entries = Object.entries(state.jobtrack.data).sort((a, b) => b[0].localeCompare(a[0]));
+        if (!entries.length) list.appendChild(el('li', 'bm-item-note', '还没有记录，从上面开始第一天的打卡吧 💪'));
+        entries.forEach(([date, rec]) => {
+          const li = el('li');
+          const btn = el('button', 'file-btn', `${date} · 投 ${rec.applied} · 回复 ${rec.replies} · 面试 ${rec.interview ? '✅' : '—'}`);
+          btn.type = 'button';
+          btn.style.width = 'auto';
+          btn.addEventListener('click', () => {
+            $('jt-date').value = date;
+            $('jt-applied').value = rec.applied;
+            $('jt-replies').value = rec.replies;
+            $('jt-interview').checked = !!rec.interview;
+          });
+          li.appendChild(btn);
+          const del = el('button', 'del-btn', '✕');
+          del.type = 'button';
+          del.addEventListener('click', async () => {
+            if (!confirm(`删除 ${date} 的记录？`)) return;
+            delete state.jobtrack.data[date];
+            await saveJobtrack(`Remove job tracking for ${date}`);
+          });
+          li.appendChild(del);
+          list.appendChild(li);
+        });
+      }
+      async function saveJobtrack(message) {
+        const msg = $('jt-msg');
+        msg.textContent = '发布中…';
+        try {
+          state.jobtrack.sha = await putFile(
+            'src/data/jobtrack.json',
+            JSON.stringify(state.jobtrack.data, null, 2) + '\n',
+            message,
+            state.jobtrack.sha
+          );
+          renderJobtrack();
+          msg.textContent = OK_MSG;
+        } catch (e) {
+          msg.textContent = '❌ ' + e.message;
+        }
+      }
+      $('btn-jt-save').addEventListener('click', async () => {
+        const date = $('jt-date').value;
+        if (!date) return ($('jt-msg').textContent = '请选择日期');
+        const applied = Math.max(0, Number($('jt-applied').value) || 0);
+        const replies = Math.max(0, Number($('jt-replies').value) || 0);
+        const interview = $('jt-interview').checked;
+        if (!applied && !replies && !interview) {
+          delete state.jobtrack.data[date];
+        } else {
+          state.jobtrack.data[date] = { applied, replies, interview };
+        }
+        $('btn-jt-save').disabled = true;
+        await saveJobtrack(`Job tracking: ${date}`);
+        $('btn-jt-save').disabled = false;
       });
 
       init();

@@ -20,7 +20,7 @@ import folders from '../data/bookmarks.json';
         <p class="folder-blurb lang-zh">{f.blurb}</p>
         <p class="folder-blurb lang-en">{f.blurbEn}</p>
         <ul class="bookmark-list">
-          {f.items.map((b) => (
+          {f.items.slice(0, 3).map((b) => (
             <li>
               <a href={b.url} target="_blank" rel="noopener">{b.title}</a>
               <span class="bookmark-source">{b.source}</span>
@@ -28,6 +28,23 @@ import folders from '../data/bookmarks.json';
             </li>
           ))}
         </ul>
+        {f.items.length > 3 && (
+          <details class="folder-more">
+            <summary>
+              <span class="lang-zh">展开全部 {f.items.length} 条收藏</span>
+              <span class="lang-en">Show all {f.items.length} bookmarks</span>
+            </summary>
+            <ul class="bookmark-list">
+              {f.items.slice(3).map((b) => (
+                <li>
+                  <a href={b.url} target="_blank" rel="noopener">{b.title}</a>
+                  <span class="bookmark-source">{b.source}</span>
+                  {b.note && <p class="bookmark-note">{b.note}</p>}
+                </li>
+              ))}
+            </ul>
+          </details>
+        )}
       </section>
     ))
   }

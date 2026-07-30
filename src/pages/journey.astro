@@ -1,6 +1,37 @@
 ---
 import Base from '../layouts/Base.astro';
 import chapters from '../data/journey.json';
+import jobtrackData from '../data/jobtrack.json';
+
+// ---- 求职追踪：每天三个色块（投递 / 回复 / 面试），颜色深浅随数量变化 ----
+interface DayRecord { applied: number; replies: number; interview: boolean; }
+const track: Record<string, DayRecord> = jobtrackData as any;
+
+const level = (n: number) => (n >= 6 ? 3 : n >= 3 ? 2 : n >= 1 ? 1 : 0);
+
+const year = new Date().getFullYear();
+interface JtCell { key: string; a: number; r: number; iv: boolean; }
+const jtMonths: { name: string; cells: (JtCell | null)[] }[] = [];
+for (let m = 0; m < 12; m++) {
+  const daysInMonth = new Date(Date.UTC(year, m + 1, 0)).getUTCDate();
+  const startWeekday = new Date(Date.UTC(year, m, 1)).getUTCDay();
+  const cells: (JtCell | null)[] = [];
+  for (let i = 0; i < startWeekday; i++) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) {
+    const key = `${year}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    const rec = track[key];
+    cells.push({ key, a: rec?.applied ?? 0, r: rec?.replies ?? 0, iv: rec?.interview ?? false });
+  }
+  jtMonths.push({ name: `${m + 1}月`, cells });
+}
+const totals = Object.values(track).reduce(
+  (acc, r) => ({
+    applied: acc.applied + (r.applied || 0),
+    replies: acc.replies + (r.replies || 0),
+    interviews: acc.interviews + (r.interview ? 1 : 0),
+  }),
+  { applied: 0, replies: 0, interviews: 0 }
+);
 ---
 
 <Base title="轨迹 Journey" active="journey">
@@ -31,4 +62,50 @@ import chapters from '../data/journey.json';
       ))
     }
   </ol>
+
+  <section class="jobtrack">
+    <h2>
+      <span class="lang-zh">求职足迹 {year}</span><span class="lang-en">Job hunt tracker {year}</span>
+    </h2>
+    <p class="garden-hint">
+      <span class="lang-zh">
+        每一天三个色块：投出简历（橙）、收到回复（绿）、面试（蓝）。累计投出 {totals.applied} 份 ·
+        回复 {totals.replies} 个 · 面试 {totals.interviews} 次。
+      </span>
+      <span class="lang-en">
+        Three strips per day: applications (orange), replies (green), interviews (blue). So far:
+        {totals.applied} applied · {totals.replies} replies · {totals.interviews} interviews.
+      </span>
+    </p>
+    <div class="garden-months">
+      {
+        jtMonths.map((m) => (
+          <div class="g-month">
+            <p class="g-month-name">{m.name}</p>
+            <div class="g-grid">
+              {m.cells.map((c) =>
+                c === null ? (
+                  <div class="g-day g-empty" />
+                ) : (
+                  <div
+                    class="jt-day"
+                    title={`${c.key} · 投 ${c.a} · 回复 ${c.r} · 面试 ${c.iv ? '✅' : '—'}`}
+                  >
+                    <div class={`jt-strip jt-a${level(c.a)}`} />
+                    <div class={`jt-strip jt-r${level(c.r)}`} />
+                    <div class={`jt-strip ${c.iv ? 'jt-iv' : 'jt-iv0'}`} />
+                  </div>
+                )
+              )}
+            </div>
+          </div>
+        ))
+      }
+    </div>
+    <div class="jt-legend">
+      <span><i class="jt-strip jt-a2 legend-chip"></i> <span class="lang-zh">投简历</span><span class="lang-en">Applied</span></span>
+      <span><i class="jt-strip jt-r2 legend-chip"></i> <span class="lang-zh">收到回复</span><span class="lang-en">Replies</span></span>
+      <span><i class="jt-strip jt-iv legend-chip"></i> <span class="lang-zh">面试</span><span class="lang-en">Interview</span></span>
+    </div>
+  </section>
 </Base>

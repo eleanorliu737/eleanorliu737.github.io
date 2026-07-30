@@ -437,6 +437,144 @@ h2 { font-size: 1.4rem; line-height: 1.4; margin: 2.5rem 0 1rem; }
 .prose img { max-width: 100%; border-radius: 10px; }
 .prose hr { border: none; border-top: 1px dashed var(--line); margin: 2rem 0; }
 
+/* ---------- 文章双语对照 ---------- */
+
+.article-bilingual {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2.5rem;
+  align-items: start;
+}
+@media (max-width: 860px) {
+  .article-bilingual { grid-template-columns: 1fr; }
+}
+.column-label {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+  border-bottom: 1px dashed var(--line);
+  padding-bottom: 0.4rem;
+  margin: 0 0 1rem;
+}
+.prose-translation { color: var(--ink); }
+
+.badge-tag { color: var(--muted); }
+.badge-tag:hover { color: var(--accent); border-color: var(--accent); text-decoration: none; }
+
+/* ---------- 标签入口 ---------- */
+
+.tag-chips { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+.tag-chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  background: var(--bg-card);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.35rem 1rem;
+  color: var(--ink);
+  font-size: 0.95rem;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+.tag-chip:hover { border-color: var(--accent); text-decoration: none; transform: translateY(-2px); }
+.tag-count {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--accent);
+}
+
+/* ---------- 写作花园 / 求职足迹 日历 ---------- */
+
+.garden-total { font-size: 0.9rem; color: var(--muted); margin-left: 0.6rem; }
+.garden-hint { color: var(--muted); font-size: 0.9rem; margin: -0.4rem 0 1rem; }
+
+.garden-months {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(10.5rem, 1fr));
+  gap: 1rem;
+}
+.g-month {
+  background: var(--bg-card);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0.6rem 0.7rem 0.8rem;
+}
+.g-month-name {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--muted);
+  margin: 0 0 0.45rem;
+}
+.g-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+.g-day {
+  aspect-ratio: 1;
+  border-radius: 4px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  line-height: 1;
+  white-space: nowrap;
+}
+.g-day.g-empty { background: none; border: none; }
+.g-day.g-has { border-color: var(--accent); background: var(--accent-soft); }
+.g-day.g-has-1 { font-size: 12px; }
+.g-day.g-has-2 { font-size: 8px; letter-spacing: -1px; }
+.g-day.g-has-3 { font-size: 6px; letter-spacing: -1px; }
+
+/* 求职追踪：每天三条色带 */
+.jobtrack { margin-top: 3.5rem; }
+.jt-day {
+  aspect-ratio: 1;
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 1px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  box-sizing: border-box;
+}
+.jt-strip { flex: 1; border-radius: 2px; background: var(--line); opacity: 0.3; }
+.jt-a1 { background: #ffd8a8; opacity: 1; }
+.jt-a2 { background: #ffa94d; opacity: 1; }
+.jt-a3 { background: #e8590c; opacity: 1; }
+.jt-r1 { background: #b2f2bb; opacity: 1; }
+.jt-r2 { background: #69db7c; opacity: 1; }
+.jt-r3 { background: #2f9e44; opacity: 1; }
+.jt-iv { background: #4dabf7; opacity: 1; }
+.jt-iv0 { background: var(--line); opacity: 0.3; }
+
+.jt-legend {
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.jt-legend > span { display: inline-flex; align-items: center; gap: 0.4rem; }
+.legend-chip { display: inline-block; width: 1.4rem; height: 0.55rem; flex: none; }
+
+/* ---------- 收藏夹折叠 ---------- */
+
+.folder-more { margin-top: 0.3rem; }
+.folder-more summary {
+  cursor: pointer;
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  color: var(--accent);
+  padding: 0.4rem 0;
+  list-style: none;
+}
+.folder-more summary::before { content: '▸ '; }
+.folder-more[open] summary::before { content: '▾ '; }
+.folder-more summary::-webkit-details-marker { display: none; }
+
 /* ---------- 响应式 ---------- */
 
 @media (max-width: 640px) {

@@ -75,12 +75,20 @@ function cellTitle(key: string, acts: { c: string; n: number }[]) {
   return `${key} · ${parts.join(' · ')}`;
 }
 
-const START = new Date(Date.UTC(2026, 6, 1)); // 2026-07-01，之前的不显示
-const END = new Date();
+// 显示窗口：2026-07-01 → 2026-10-31（求职冲刺期），之前的不显示，
+// 今天之后的日子留成空格子，一眼看到还剩多少时间
+const START = new Date(Date.UTC(2026, 6, 1));
+const END = new Date(Date.UTC(2026, 9, 31));
+const TODAY = new Date().toISOString().slice(0, 10);
 const gridStart = new Date(START);
 gridStart.setUTCDate(START.getUTCDate() - START.getUTCDay()); // 对齐到周日
 
-interface Cell { key: string; style: string; title: string; active: boolean; }
+const daysLeft = Math.max(
+  0,
+  Math.ceil((END.getTime() - Date.parse(TODAY)) / 86400000)
+);
+
+interface Cell { key: string; style: string; title: string; active: boolean; future: boolean; }
 const weeks: (Cell | null)[][] = [];
 const monthLabels: string[] = [];
 let cursor = new Date(gridStart);
@@ -94,8 +102,15 @@ while (cursor <= END) {
   for (let i = 0; i < 7; i++) {
     const key = cursor.toISOString().slice(0, 10);
     if (cursor >= START && cursor <= END) {
-      const acts = dayActivities(key);
-      week.push({ key, style: cellStyle(acts), title: cellTitle(key, acts), active: acts.length > 0 });
+      const future = key > TODAY;
+      const acts = future ? [] : dayActivities(key);
+      week.push({
+        key,
+        style: cellStyle(acts),
+        title: future ? key : cellTitle(key, acts),
+        active: acts.length > 0,
+        future,
+      });
     } else {
       week.push(null);
     }
@@ -152,8 +167,12 @@ while (cursor <= END) {
   <section class="activity">
     <h2>
       <span class="lang-zh">动态</span><span class="lang-en">Activity</span>
-      <span class="activity-since">since 2026.07</span>
+      <span class="activity-since">2026.07 — 2026.10</span>
     </h2>
+    <p class="activity-hint">
+      <span class="lang-zh">写文章、收藏、投简历、面试、做项目、学习——每一天的痕迹。距离 10 月底还有 {daysLeft} 天。</span>
+      <span class="lang-en">Writing, bookmarks, applications, interviews, projects, learning — traces of each day. {daysLeft} days left until the end of October.</span>
+    </p>
     <div class="activity-scroll">
       <div class="activity-months">
         {monthLabels.map((m) => <span class="a-month-label">{m}</span>)}
@@ -166,7 +185,11 @@ while (cursor <= END) {
                 c === null ? (
                   <span class="a-day a-void" />
                 ) : (
-                  <span class:list={['a-day', !c.active && 'a-quiet']} style={c.style} title={c.title} />
+                  <span
+                    class:list={['a-day', c.future ? 'a-future' : !c.active && 'a-quiet', c.key === TODAY && 'a-today']}
+                    style={c.style}
+                    title={c.title}
+                  />
                 )
               )}
             </div>

@@ -161,8 +161,11 @@ const BRANCH = 'main';
             <label class="f-field"><span class="f-label">网址（直接从浏览器地址栏复制过来）</span>
               <input id="bm-url" class="f-input" type="text" placeholder="https://..." />
             </label>
-            <label class="f-field"><span class="f-label">推荐语：为什么值得读？（可空）</span>
+            <label class="f-field"><span class="f-label">推荐语 · 中文：为什么值得读？（可空）</span>
               <input id="bm-note" class="f-input" type="text" />
+            </label>
+            <label class="f-field"><span class="f-label">推荐语 · 英文（可空；留空时英文模式下显示中文推荐语）</span>
+              <input id="bm-note-en" class="f-input" type="text" />
             </label>
             <div class="form-actions">
               <button id="btn-bm-add" class="admin-btn" type="button">收藏并发布</button>
@@ -958,7 +961,14 @@ const BRANCH = 'main';
         } else {
           folder = state.bookmarks.data[Number($('bm-folder').value)];
         }
-        folder.items.unshift({ title, url, source, note: $('bm-note').value.trim(), date: today() });
+        folder.items.unshift({
+          title,
+          url,
+          source,
+          note: $('bm-note').value.trim(),
+          noteEn: $('bm-note-en').value.trim(),
+          date: today(),
+        });
         msg.textContent = '发布中…';
         $('btn-bm-add').disabled = true;
         try {
@@ -967,6 +977,7 @@ const BRANCH = 'main';
           $('bm-title').value = '';
           $('bm-url').value = '';
           $('bm-note').value = '';
+          $('bm-note-en').value = '';
           $('bm-nf-name').value = '';
           $('bm-nf-blurb').value = '';
           msg.textContent = OK_MSG;
@@ -993,7 +1004,8 @@ const BRANCH = 'main';
       // 🧭 轨迹
       // ============================================================
       const JO_FIELDS = [
-        ['period', '时间段（例：2026 · 现在 Now）'],
+        ['period', '时间段 · 中文（例：2026 · 现在）'],
+        ['periodEn', '时间段 · 英文（例：2026 · Now）'],
         ['emoji', '图标（一个 emoji）', { narrow: true }],
         ['title', '章节标题 · 中文'],
         ['titleEn', '章节标题 · 英文'],
@@ -1051,7 +1063,7 @@ const BRANCH = 'main';
         });
       }
       $('btn-jo-add').addEventListener('click', () => {
-        state.journey.data.push({ period: '', emoji: '✨', title: '', titleEn: '', tagline: '', taglineEn: '', body: '', bodyEn: '' });
+        state.journey.data.push({ period: '', periodEn: '', emoji: '✨', title: '', titleEn: '', tagline: '', taglineEn: '', body: '', bodyEn: '' });
         markDirty('journey');
         renderJourney();
       });

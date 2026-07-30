@@ -67,13 +67,15 @@ function cellStyle(acts: { c: string; n: number }[]) {
     .join(', ');
   return `background:linear-gradient(135deg, ${stops})`;
 }
-function cellTitle(key: string, acts: { c: string; n: number }[]) {
+function cellTitle(key: string, acts: { c: string; n: number }[], lang: 'zh' | 'en') {
   if (!acts.length) return key;
   const jt = track[key];
-  const parts = acts.map((a) => `${CATS[a.c].zh}${a.n > 1 ? ' ×' + a.n : ''}`);
-  if (jt?.replies) parts.push(`收到回复 ×${jt.replies}`);
+  const parts = acts.map((a) => `${CATS[a.c][lang]}${a.n > 1 ? ' ×' + a.n : ''}`);
+  if (jt?.replies) parts.push(`${lang === 'zh' ? '收到回复' : 'Replies'} ×${jt.replies}`);
   return `${key} · ${parts.join(' · ')}`;
 }
+
+const MONTHS_EN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 // 显示窗口：2026-07-01 → 2026-10-31（求职冲刺期），之前的不显示，
 // 今天之后的日子留成空格子，一眼看到还剩多少时间
@@ -88,16 +90,19 @@ const daysLeft = Math.max(
   Math.ceil((END.getTime() - Date.parse(TODAY)) / 86400000)
 );
 
-interface Cell { key: string; style: string; title: string; active: boolean; future: boolean; }
+interface Cell { key: string; style: string; titleZh: string; titleEn: string; active: boolean; future: boolean; }
 const weeks: (Cell | null)[][] = [];
-const monthLabels: string[] = [];
+const monthLabels: { zh: string; en: string }[] = [];
 let cursor = new Date(gridStart);
 let prevMonth = -1;
 while (cursor <= END) {
   const week: (Cell | null)[] = [];
   const weekStartMonth = cursor.getUTCMonth();
   const inStart = cursor >= START;
-  monthLabels.push(inStart && weekStartMonth !== prevMonth && cursor.getUTCDate() <= 7 ? `${weekStartMonth + 1}月` : '');
+  const isNewMonth = inStart && weekStartMonth !== prevMonth && cursor.getUTCDate() <= 7;
+  monthLabels.push(
+    isNewMonth ? { zh: `${weekStartMonth + 1}月`, en: MONTHS_EN[weekStartMonth] } : { zh: '', en: '' }
+  );
   if (inStart) prevMonth = weekStartMonth;
   for (let i = 0; i < 7; i++) {
     const key = cursor.toISOString().slice(0, 10);
@@ -107,7 +112,8 @@ while (cursor <= END) {
       week.push({
         key,
         style: cellStyle(acts),
-        title: future ? key : cellTitle(key, acts),
+        titleZh: future ? key : cellTitle(key, acts, 'zh'),
+        titleEn: future ? key : cellTitle(key, acts, 'en'),
         active: acts.length > 0,
         future,
       });
@@ -175,7 +181,14 @@ while (cursor <= END) {
     </p>
     <div class="activity-scroll">
       <div class="activity-months">
-        {monthLabels.map((m) => <span class="a-month-label">{m}</span>)}
+        {
+          monthLabels.map((m) => (
+            <span class="a-month-label">
+              <span class="lang-zh">{m.zh}</span>
+              <span class="lang-en">{m.en}</span>
+            </span>
+          ))
+        }
       </div>
       <div class="activity-grid">
         {
@@ -188,7 +201,9 @@ while (cursor <= END) {
                   <span
                     class:list={['a-day', c.future ? 'a-future' : !c.active && 'a-quiet', c.key === TODAY && 'a-today']}
                     style={c.style}
-                    title={c.title}
+                    title={c.titleEn}
+                    data-t-zh={c.titleZh}
+                    data-t-en={c.titleEn}
                   />
                 )
               )}
@@ -231,7 +246,15 @@ while (cursor <= END) {
             <a class="post-title" href={`/writing/${post.id}/`}>{post.data.title}</a>
             <div class="post-meta">
               <span>{fmt(post.data.date)}</span>
-              <span class="badge badge-lang">{post.data.lang === 'zh' ? '中文' : 'EN'}</span>
+              <span class="badge badge-lang">
+                {post.data.lang === 'zh' ? (
+                  <>
+                    <span class="lang-zh">中文</span><span class="lang-en">CN</span>
+                  </>
+                ) : (
+                  'EN'
+                )}
+              </span>
             </div>
             {post.data.summary && <p class="post-summary">{post.data.summary}</p>}
           </li>

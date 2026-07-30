@@ -37,8 +37,20 @@ const fmt = (d: Date) => d.toISOString().slice(0, 10);
           <a class="post-title" href={`/writing/${post.id}/`}>{post.data.title}</a>
           <div class="post-meta">
             <span>{fmt(post.data.date)}</span>
-            <span class="badge badge-lang">{post.data.lang === 'zh' ? '中文' : 'EN'}</span>
-            {post.data.translation && <span class="badge badge-lang">双语</span>}
+            <span class="badge badge-lang">
+              {post.data.lang === 'zh' ? (
+                <>
+                  <span class="lang-zh">中文</span><span class="lang-en">CN</span>
+                </>
+              ) : (
+                'EN'
+              )}
+            </span>
+            {post.data.translation && (
+              <span class="badge badge-lang">
+                <span class="lang-zh">双语</span><span class="lang-en">Bilingual</span>
+              </span>
+            )}
           </div>
           {post.data.summary && <p class="post-summary">{post.data.summary}</p>}
         </li>

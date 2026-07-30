@@ -140,10 +140,20 @@ const nav = [
         });
       })();
 
+      // 鼠标悬停提示（title 属性）无法用 CSS 切换语言，
+      // 所以带 data-t-zh / data-t-en 的元素在这里按当前语言写入 title
+      function applyTooltipLang(lang) {
+        document.querySelectorAll('[data-t-zh]').forEach(function (el) {
+          el.title = lang === 'zh' ? el.dataset.tZh : el.dataset.tEn;
+        });
+      }
+      applyTooltipLang(document.documentElement.dataset.lang);
+
       document.getElementById('lang-toggle').addEventListener('click', function () {
         var next = document.documentElement.dataset.lang === 'en' ? 'zh' : 'en';
         document.documentElement.dataset.lang = next;
         document.documentElement.lang = next === 'zh' ? 'zh-CN' : 'en';
+        applyTooltipLang(next);
         try {
           localStorage.setItem('site-lang', next);
         } catch (e) {}

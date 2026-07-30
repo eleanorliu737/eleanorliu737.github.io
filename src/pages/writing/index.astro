@@ -12,29 +12,6 @@ const fmt = (d: Date) => d.toISOString().slice(0, 10);
 const tagCounts: Record<string, number> = {};
 posts.forEach((p) => p.data.tags.forEach((t) => (tagCounts[t] = (tagCounts[t] || 0) + 1)));
 const tags = Object.entries(tagCounts).sort((a, b) => b[1] - a[1]);
-
-// ---- 年度写作花园：每天写了几篇文章，开几朵花 ----
-const year = new Date().getFullYear();
-const countByDay: Record<string, number> = {};
-posts.forEach((p) => {
-  const d = p.data.date.toISOString().slice(0, 10);
-  countByDay[d] = (countByDay[d] || 0) + 1;
-});
-const totalThisYear = posts.filter((p) => p.data.date.getUTCFullYear() === year).length;
-
-interface DayCell { day: number; count: number; key: string; }
-const months: { name: string; cells: (DayCell | null)[] }[] = [];
-for (let m = 0; m < 12; m++) {
-  const daysInMonth = new Date(Date.UTC(year, m + 1, 0)).getUTCDate();
-  const startWeekday = new Date(Date.UTC(year, m, 1)).getUTCDay();
-  const cells: (DayCell | null)[] = [];
-  for (let i = 0; i < startWeekday; i++) cells.push(null);
-  for (let d = 1; d <= daysInMonth; d++) {
-    const key = `${year}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-    cells.push({ day: d, count: countByDay[key] || 0, key });
-  }
-  months.push({ name: `${m + 1}月`, cells });
-}
 ---
 
 <Base title="文章 Writing" active="writing">
@@ -51,40 +28,6 @@ for (let m = 0; m < 12; m++) {
           <a class="tag-chip" href={`/writing/tag/${encodeURIComponent(t)}/`}>
             #{t} <span class="tag-count">{n}</span>
           </a>
-        ))
-      }
-    </div>
-  </section>
-
-  <section class="garden">
-    <h2>
-      <span class="lang-zh">写作花园 {year}</span><span class="lang-en">Writing garden {year}</span>
-      <span class="garden-total">🌸 × {totalThisYear}</span>
-    </h2>
-    <p class="garden-hint">
-      <span class="lang-zh">写了文章的日子会开花：一篇一朵，两篇两朵。</span>
-      <span class="lang-en">Days with writing bloom: one flower per post.</span>
-    </p>
-    <div class="garden-months">
-      {
-        months.map((m) => (
-          <div class="g-month">
-            <p class="g-month-name">{m.name}</p>
-            <div class="g-grid">
-              {m.cells.map((c) =>
-                c === null ? (
-                  <div class="g-day g-empty" />
-                ) : (
-                  <div
-                    class:list={['g-day', c.count > 0 && `g-has g-has-${Math.min(c.count, 3)}`]}
-                    title={`${c.key}${c.count ? ` · ${c.count} 篇` : ''}`}
-                  >
-                    {c.count > 0 ? '🌸'.repeat(Math.min(c.count, 3)) : ''}
-                  </div>
-                )
-              )}
-            </div>
-          </div>
         ))
       }
     </div>

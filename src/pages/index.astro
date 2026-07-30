@@ -1,6 +1,8 @@
 ---
 import { getCollection } from 'astro:content';
 import Base from '../layouts/Base.astro';
+import folders from '../data/bookmarks.json';
+import jobtrackData from '../data/jobtrack.json';
 
 const all = (await getCollection('posts', ({ data }) => !data.draft)).sort(
   (a, b) => b.data.date.valueOf() - a.data.date.valueOf()
@@ -11,6 +13,97 @@ const hasFeatured = featured.length > 0;
 const posts = (hasFeatured ? featured : all).slice(0, 6);
 
 const fmt = (d: Date) => d.toISOString().slice(0, 10);
+
+// ============================================================
+// 统一动态日历（GitHub 贡献图风格）：自 2026-07 起的所有站内动态
+// ============================================================
+interface DayRecord {
+  applied?: number;
+  replies?: number;
+  interview?: boolean;
+  project?: boolean;
+  study?: boolean;
+}
+const track: Record<string, DayRecord> = jobtrackData as any;
+
+const postCount: Record<string, number> = {};
+all.forEach((p) => {
+  const d = fmt(p.data.date);
+  postCount[d] = (postCount[d] || 0) + 1;
+});
+const bmCount: Record<string, number> = {};
+(folders as any[]).forEach((f) =>
+  f.items.forEach((it: any) => {
+    if (it.date) bmCount[it.date] = (bmCount[it.date] || 0) + 1;
+  })
+);
+
+const CATS: Record<string, { color: string; zh: string; en: string }> = {
+  post: { color: '#e8590c', zh: '发表文章', en: 'Writing' },
+  bookmark: { color: '#fab005', zh: '收藏好文', en: 'Bookmarks' },
+  applied: { color: '#4dabf7', zh: '投简历', en: 'Applications' },
+  interview: { color: '#7048e8', zh: '面试', en: 'Interviews' },
+  project: { color: '#2f9e44', zh: '做项目', en: 'Projects' },
+  study: { color: '#f06595', zh: '学习', en: 'Learning' },
+};
+
+function dayActivities(key: string) {
+  const acts: { c: string; n: number }[] = [];
+  if (postCount[key]) acts.push({ c: 'post', n: postCount[key] });
+  if (bmCount[key]) acts.push({ c: 'bookmark', n: bmCount[key] });
+  const jt = track[key];
+  if (jt?.applied) acts.push({ c: 'applied', n: jt.applied });
+  if (jt?.interview) acts.push({ c: 'interview', n: 1 });
+  if (jt?.project) acts.push({ c: 'project', n: 1 });
+  if (jt?.study) acts.push({ c: 'study', n: 1 });
+  return acts;
+}
+function cellStyle(acts: { c: string; n: number }[]) {
+  if (!acts.length) return '';
+  if (acts.length === 1) return `background:${CATS[acts[0].c].color}`;
+  const seg = 100 / acts.length;
+  const stops = acts
+    .map((a, i) => `${CATS[a.c].color} ${(i * seg).toFixed(1)}% ${((i + 1) * seg).toFixed(1)}%`)
+    .join(', ');
+  return `background:linear-gradient(135deg, ${stops})`;
+}
+function cellTitle(key: string, acts: { c: string; n: number }[]) {
+  if (!acts.length) return key;
+  const jt = track[key];
+  const parts = acts.map((a) => `${CATS[a.c].zh}${a.n > 1 ? ' ×' + a.n : ''}`);
+  if (jt?.replies) parts.push(`收到回复 ×${jt.replies}`);
+  return `${key} · ${parts.join(' · ')}`;
+}
+
+const START = new Date(Date.UTC(2026, 6, 1)); // 2026-07-01，之前的不显示
+const END = new Date();
+const gridStart = new Date(START);
+gridStart.setUTCDate(START.getUTCDate() - START.getUTCDay()); // 对齐到周日
+
+interface Cell { key: string; style: string; title: string; active: boolean; }
+const weeks: (Cell | null)[][] = [];
+const monthLabels: string[] = [];
+let cursor = new Date(gridStart);
+let prevMonth = -1;
+while (cursor <= END) {
+  const week: (Cell | null)[] = [];
+  const weekStartMonth = cursor.getUTCMonth();
+  const inStart = cursor >= START;
+  monthLabels.push(inStart && weekStartMonth !== prevMonth && cursor.getUTCDate() <= 7 ? `${weekStartMonth + 1}月` : '');
+  if (inStart) prevMonth = weekStartMonth;
+  for (let i = 0; i < 7; i++) {
+    const key = cursor.toISOString().slice(0, 10);
+    if (cursor >= START && cursor <= END) {
+      const acts = dayActivities(key);
+      week.push({ key, style: cellStyle(acts), title: cellTitle(key, acts), active: acts.length > 0 });
+    } else {
+      week.push(null);
+    }
+    cursor = new Date(cursor);
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+  }
+  weeks.push(week);
+}
 ---
 
 <Base active="home">
@@ -55,6 +148,44 @@ const fmt = (d: Date) => d.toISOString().slice(0, 10);
       <p class="lang-en">Great reads deserve a home — sorted into folders, each with a note.</p>
     </a>
   </div>
+
+  <section class="activity">
+    <h2>
+      <span class="lang-zh">动态</span><span class="lang-en">Activity</span>
+      <span class="activity-since">since 2026.07</span>
+    </h2>
+    <div class="activity-scroll">
+      <div class="activity-months">
+        {monthLabels.map((m) => <span class="a-month-label">{m}</span>)}
+      </div>
+      <div class="activity-grid">
+        {
+          weeks.map((week) => (
+            <div class="a-week">
+              {week.map((c) =>
+                c === null ? (
+                  <span class="a-day a-void" />
+                ) : (
+                  <span class:list={['a-day', !c.active && 'a-quiet']} style={c.style} title={c.title} />
+                )
+              )}
+            </div>
+          ))
+        }
+      </div>
+    </div>
+    <div class="activity-legend">
+      {
+        Object.values(CATS).map((cat) => (
+          <span class="a-legend-item">
+            <i class="a-day" style={`background:${cat.color}`} />
+            <span class="lang-zh">{cat.zh}</span>
+            <span class="lang-en">{cat.en}</span>
+          </span>
+        ))
+      }
+    </div>
+  </section>
 
   <section>
     <h2>

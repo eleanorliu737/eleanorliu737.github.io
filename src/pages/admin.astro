@@ -64,7 +64,7 @@ const BRANCH = 'main';
           <button class="tab-btn" type="button" data-tab="bookmarks">📚 收藏好文章</button>
           <button class="tab-btn" type="button" data-tab="journey">🧭 人生轨迹</button>
           <button class="tab-btn" type="button" data-tab="works">🛠 作品与想法</button>
-          <button class="tab-btn" type="button" data-tab="jobtrack">🎯 求职打卡</button>
+          <button class="tab-btn" type="button" data-tab="jobtrack">📆 每日打卡</button>
         </nav>
 
         <!-- ============ 文章 ============ -->
@@ -201,8 +201,8 @@ const BRANCH = 'main';
         <!-- ============ 求职打卡 ============ -->
         <div id="tab-jobtrack" class="tab-panel" hidden>
           <div class="form-panel add-box">
-            <p class="box-title">🎯 记录一天的求职进展</p>
-            <p class="admin-hint">记录会显示在网站「轨迹」页底部的求职足迹日历上。</p>
+            <p class="box-title">📆 记录一天的动态</p>
+            <p class="admin-hint">记录会汇入首页的「动态」日历（发文章、收藏是自动记录的，不用在这里填）。</p>
             <div class="f-row">
               <label class="f-field f-narrow"><span class="f-label">日期</span>
                 <input id="jt-date" type="date" class="f-input" />
@@ -215,6 +215,8 @@ const BRANCH = 'main';
               </label>
             </div>
             <label class="f-check"><input type="checkbox" id="jt-interview" /> 📞 这天收到或参加了面试</label>
+            <label class="f-check"><input type="checkbox" id="jt-project" /> 🛠 这天推进了项目</label>
+            <label class="f-check"><input type="checkbox" id="jt-study" /> 📖 这天学习了新东西</label>
             <div class="form-actions">
               <button id="btn-jt-save" class="admin-btn" type="button">记录并发布</button>
             </div>
@@ -956,7 +958,7 @@ const BRANCH = 'main';
         } else {
           folder = state.bookmarks.data[Number($('bm-folder').value)];
         }
-        folder.items.unshift({ title, url, source, note: $('bm-note').value.trim() });
+        folder.items.unshift({ title, url, source, note: $('bm-note').value.trim(), date: today() });
         msg.textContent = '发布中…';
         $('btn-bm-add').disabled = true;
         try {
@@ -1168,14 +1170,20 @@ const BRANCH = 'main';
         if (!entries.length) list.appendChild(el('li', 'bm-item-note', '还没有记录，从上面开始第一天的打卡吧 💪'));
         entries.forEach(([date, rec]) => {
           const li = el('li');
-          const btn = el('button', 'file-btn', `${date} · 投 ${rec.applied} · 回复 ${rec.replies} · 面试 ${rec.interview ? '✅' : '—'}`);
+          const btn = el(
+            'button',
+            'file-btn',
+            `${date} · 投 ${rec.applied || 0} · 回复 ${rec.replies || 0} · 面试 ${rec.interview ? '✅' : '—'} · 项目 ${rec.project ? '✅' : '—'} · 学习 ${rec.study ? '✅' : '—'}`
+          );
           btn.type = 'button';
           btn.style.width = 'auto';
           btn.addEventListener('click', () => {
             $('jt-date').value = date;
-            $('jt-applied').value = rec.applied;
-            $('jt-replies').value = rec.replies;
+            $('jt-applied').value = rec.applied || 0;
+            $('jt-replies').value = rec.replies || 0;
             $('jt-interview').checked = !!rec.interview;
+            $('jt-project').checked = !!rec.project;
+            $('jt-study').checked = !!rec.study;
           });
           li.appendChild(btn);
           const del = el('button', 'del-btn', '✕');
@@ -1211,13 +1219,15 @@ const BRANCH = 'main';
         const applied = Math.max(0, Number($('jt-applied').value) || 0);
         const replies = Math.max(0, Number($('jt-replies').value) || 0);
         const interview = $('jt-interview').checked;
-        if (!applied && !replies && !interview) {
+        const project = $('jt-project').checked;
+        const study = $('jt-study').checked;
+        if (!applied && !replies && !interview && !project && !study) {
           delete state.jobtrack.data[date];
         } else {
-          state.jobtrack.data[date] = { applied, replies, interview };
+          state.jobtrack.data[date] = { applied, replies, interview, project, study };
         }
         $('btn-jt-save').disabled = true;
-        await saveJobtrack(`Job tracking: ${date}`);
+        await saveJobtrack(`Daily log: ${date}`);
         $('btn-jt-save').disabled = false;
       });
 

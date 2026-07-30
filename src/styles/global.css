@@ -485,80 +485,51 @@ h2 { font-size: 1.4rem; line-height: 1.4; margin: 2.5rem 0 1rem; }
   color: var(--accent);
 }
 
-/* ---------- 写作花园 / 求职足迹 日历 ---------- */
+/* ---------- 统一动态日历（GitHub 贡献图风格，紧凑克制） ---------- */
 
-.garden-total { font-size: 0.9rem; color: var(--muted); margin-left: 0.6rem; }
-.garden-hint { color: var(--muted); font-size: 0.9rem; margin: -0.4rem 0 1rem; }
-
-.garden-months {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(10.5rem, 1fr));
-  gap: 1rem;
-}
-.g-month {
-  background: var(--bg-card);
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 0.6rem 0.7rem 0.8rem;
-}
-.g-month-name {
+.activity h2 { margin-bottom: 0.8rem; }
+.activity-since {
   font-family: var(--mono);
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   color: var(--muted);
-  margin: 0 0 0.45rem;
+  margin-left: 0.6rem;
+  letter-spacing: 0.08em;
 }
-.g-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
-.g-day {
-  aspect-ratio: 1;
-  border-radius: 4px;
-  background: var(--bg);
-  border: 1px solid var(--line);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  line-height: 1;
+.activity-scroll { overflow-x: auto; padding-bottom: 0.25rem; }
+
+.activity-months { display: flex; gap: 3px; margin-bottom: 4px; }
+.a-month-label {
+  flex: none;
+  width: 11px;
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--muted);
   white-space: nowrap;
+  overflow: visible;
 }
-.g-day.g-empty { background: none; border: none; }
-.g-day.g-has { border-color: var(--accent); background: var(--accent-soft); }
-.g-day.g-has-1 { font-size: 12px; }
-.g-day.g-has-2 { font-size: 8px; letter-spacing: -1px; }
-.g-day.g-has-3 { font-size: 6px; letter-spacing: -1px; }
 
-/* 求职追踪：每天三条色带 */
-.jobtrack { margin-top: 3.5rem; }
-.jt-day {
-  aspect-ratio: 1;
-  border-radius: 4px;
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  padding: 1px;
-  background: var(--bg);
-  border: 1px solid var(--line);
-  box-sizing: border-box;
+.activity-grid { display: flex; gap: 3px; width: max-content; }
+.a-week { display: flex; flex-direction: column; gap: 3px; }
+.a-day {
+  display: inline-block;
+  width: 11px;
+  height: 11px;
+  border-radius: 3px;
+  flex: none;
 }
-.jt-strip { flex: 1; border-radius: 2px; background: var(--line); opacity: 0.3; }
-.jt-a1 { background: #ffd8a8; opacity: 1; }
-.jt-a2 { background: #ffa94d; opacity: 1; }
-.jt-a3 { background: #e8590c; opacity: 1; }
-.jt-r1 { background: #b2f2bb; opacity: 1; }
-.jt-r2 { background: #69db7c; opacity: 1; }
-.jt-r3 { background: #2f9e44; opacity: 1; }
-.jt-iv { background: #4dabf7; opacity: 1; }
-.jt-iv0 { background: var(--line); opacity: 0.3; }
+.a-quiet { background: var(--line); opacity: 0.45; }
+.a-void { visibility: hidden; }
 
-.jt-legend {
+.activity-legend {
   display: flex;
-  gap: 1.5rem;
   flex-wrap: wrap;
-  margin-top: 1rem;
-  font-size: 0.85rem;
+  gap: 0.4rem 1.1rem;
+  margin-top: 0.7rem;
+  font-size: 0.8rem;
   color: var(--muted);
 }
-.jt-legend > span { display: inline-flex; align-items: center; gap: 0.4rem; }
-.legend-chip { display: inline-block; width: 1.4rem; height: 0.55rem; flex: none; }
+.a-legend-item { display: inline-flex; align-items: center; gap: 0.4rem; }
+.a-legend-item .a-day { width: 10px; height: 10px; }
 
 /* ---------- 收藏夹折叠 ---------- */
 

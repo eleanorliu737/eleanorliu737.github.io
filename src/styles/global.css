@@ -629,4 +629,31 @@ h2 { font-size: 1.4rem; line-height: 1.4; margin: 2.5rem 0 1rem; }
   h1 { font-size: 1.7rem; }
   .hero h1 { font-size: 2rem; }
   .site-main { padding-top: 2rem; }
+
+  /* 手机端页头固定两行：第一行 logo + 语言按钮，第二行导航。
+     英文标签比中文长得多，不锁死结构的话英文会挤成三行。 */
+  .site-header {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      'logo toggle'
+      'nav  nav';
+    align-items: center;
+    gap: 0.7rem 1rem;
+  }
+  .logo-wrap { grid-area: logo; }
+  .header-right { display: contents; }
+  .lang-toggle { grid-area: toggle; justify-self: end; }
+
+  .site-nav {
+    grid-area: nav;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 0.85rem;
+    padding-bottom: 2px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .site-nav::-webkit-scrollbar { display: none; }
+  .nav-link { font-size: 0.88rem; white-space: nowrap; }
 }

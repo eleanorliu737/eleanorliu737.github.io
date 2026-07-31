@@ -5,15 +5,12 @@ interface Props {
   title?: string;
   description?: string;
   active?: string;
-  /** wide = 双栏/网格页（默认）；reading = 单列长文，收窄并居中，保证阅读行宽舒适 */
-  width?: 'wide' | 'reading';
 }
 
 const {
   title,
   description = "Eleanor Liu's personal site: journey, works, writing, and a library of good reads. Eleanor Liu 的个人网站：轨迹、作品、文章与收藏。",
   active = '',
-  width = 'wide',
 } = Astro.props;
 
 const pageTitle = title ? `${title} · Eleanor Liu` : 'Eleanor Liu · Journey, Works, Writing & Library';
@@ -115,7 +112,7 @@ const nav = [
       </div>
     </header>
 
-    <main class:list={['site-main', width === 'reading' && 'site-main-reading']}>
+    <main class="site-main">
       <slot />
     </main>
 

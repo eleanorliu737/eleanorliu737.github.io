@@ -11,7 +11,8 @@
   --line: #e7dfd3;
   --accent: #d9480f;
   --accent-soft: #ffe8d9;
-  --maxw: 72rem;
+  /* 全站统一版心：内容整块居中（与 About 页一致），不再出现内容偏左、右侧留白的失衡 */
+  --maxw: 52rem;
   --mono: ui-monospace, "Cascadia Code", Consolas, "JetBrains Mono", monospace;
   --sans: system-ui, -apple-system, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
 }
@@ -169,14 +170,11 @@ html[data-lang='zh'] .lang-opt[data-value='zh'] {
   margin: 0 auto;
   padding: 3rem 1.25rem 4rem;
 }
-/* 长文页：收窄并居中，行宽舒适，整体不再偏左 */
-.site-main-reading { max-width: 52rem; }
-
-/* 通用双栏：主内容 + 右侧边栏，把宽版心用满 */
+/* 通用双栏：主内容 + 右侧边栏 */
 .split-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 16rem;
-  gap: 3rem;
+  grid-template-columns: minmax(0, 1fr) 13rem;
+  gap: 2.5rem;
   align-items: start;
 }
 .split-main { min-width: 0; }
@@ -185,7 +183,7 @@ html[data-lang='zh'] .lang-opt[data-value='zh'] {
   position: sticky;
   top: 2rem;
   border-left: 1px solid var(--line);
-  padding-left: 1.75rem;
+  padding-left: 1.4rem;
 }
 .side-heading { margin: 0 0 0.9rem; font-size: 1rem; }
 .side-note {
@@ -330,7 +328,7 @@ h2 { font-size: 1.4rem; line-height: 1.4; margin: 2.5rem 0 1rem; }
 .timeline::before {
   content: '';
   position: absolute;
-  left: calc(11rem + 1.2rem);
+  left: calc(8rem + 1.2rem);
   top: 0.5rem;
   bottom: 0.5rem;
   width: 2px;
@@ -340,7 +338,7 @@ h2 { font-size: 1.4rem; line-height: 1.4; margin: 2.5rem 0 1rem; }
 .chapter {
   position: relative;
   display: grid;
-  grid-template-columns: 11rem 2.4rem minmax(0, 40rem);
+  grid-template-columns: 8rem 2.4rem minmax(0, 1fr);
   column-gap: 1.5rem;
   align-items: start;
   padding: 0 0 3rem;
@@ -568,7 +566,7 @@ h2 { font-size: 1.4rem; line-height: 1.4; margin: 2.5rem 0 1rem; }
 .activity-months { display: flex; column-gap: 5px; margin-bottom: 5px; }
 .a-month-label {
   flex: none;
-  width: 42px;
+  width: 38px;
   font-family: var(--mono);
   font-size: 11px;
   color: var(--muted);
@@ -580,7 +578,7 @@ h2 { font-size: 1.4rem; line-height: 1.4; margin: 2.5rem 0 1rem; }
 .a-week { display: flex; flex-direction: column; row-gap: 3px; }
 .a-day {
   display: inline-block;
-  width: 42px;
+  width: 38px;
   height: 11px;
   border-radius: 3px;
   flex: none;

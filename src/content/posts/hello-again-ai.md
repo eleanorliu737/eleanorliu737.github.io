@@ -2,8 +2,10 @@
 title: "Hello (Again), AI"
 date: 2026-07-10
 lang: en
-summary: After two years away, I came back to AI the most direct way I know — by building something in a few days.
-tags: [AI, career]
+summary: "After two years away, I came back to AI the most direct way I know — by building something in a few days."
+tags: ["AI", "career"]
+featured: true
+draft: false
 ---
 
 Two years is a long time in AI. When I stepped away after my master's, GPT-4 was the frontier; when I looked back, the whole field had rearranged itself.

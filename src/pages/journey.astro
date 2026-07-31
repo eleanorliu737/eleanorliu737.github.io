@@ -13,12 +13,14 @@ import chapters from '../data/journey.json';
     {
       chapters.map((c) => (
         <li class="chapter">
-          <div class="chapter-marker">{c.emoji}</div>
-          <div class="chapter-body">
+          <div class="chapter-aside">
             <p class="chapter-period">
               <span class="lang-zh">{c.period}</span>
               <span class="lang-en">{(c as any).periodEn || c.period}</span>
             </p>
+          </div>
+          <div class="chapter-marker">{c.emoji}</div>
+          <div class="chapter-body">
             <h2>
               <span class="lang-zh">{c.title}</span>
               <span class="lang-en">{c.titleEn}</span>

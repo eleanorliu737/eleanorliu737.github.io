@@ -169,6 +169,40 @@ html[data-lang='zh'] .lang-opt[data-value='zh'] {
   margin: 0 auto;
   padding: 3rem 1.25rem 4rem;
 }
+/* 长文页：收窄并居中，行宽舒适，整体不再偏左 */
+.site-main-reading { max-width: 52rem; }
+
+/* 通用双栏：主内容 + 右侧边栏，把宽版心用满 */
+.split-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 16rem;
+  gap: 3rem;
+  align-items: start;
+}
+.split-main { min-width: 0; }
+.split-main > h2:first-child { margin-top: 0; }
+.split-side {
+  position: sticky;
+  top: 2rem;
+  border-left: 1px solid var(--line);
+  padding-left: 1.75rem;
+}
+.side-heading { margin: 0 0 0.9rem; font-size: 1rem; }
+.side-note {
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.7;
+  margin: 1.25rem 0 0;
+  padding-top: 1rem;
+  border-top: 1px dashed var(--line);
+}
+.tag-chips-stacked { flex-direction: column; align-items: flex-start; gap: 0.45rem; }
+
+@media (max-width: 820px) {
+  .split-layout { grid-template-columns: 1fr; gap: 2.5rem; }
+  .split-side { position: static; border-left: none; padding-left: 0; border-top: 1px solid var(--line); padding-top: 1.5rem; }
+  .tag-chips-stacked { flex-direction: row; }
+}
 
 .site-footer {
   max-width: var(--maxw);
@@ -203,7 +237,9 @@ h2 { font-size: 1.4rem; line-height: 1.4; margin: 2.5rem 0 1rem; }
   margin-top: 0.35rem;
 }
 
-.lede { font-size: 1.05rem; color: var(--muted); margin: 0 0 2.5rem; }
+/* 导语和摘要限制行宽，避免一行拉到 1100px 难以阅读 */
+.lede { font-size: 1.05rem; color: var(--muted); margin: 0 0 2.5rem; max-width: 44rem; }
+.post-summary, .chapter-body p, .idea-list p { max-width: 44rem; }
 .en-text { color: var(--muted); font-size: 0.92rem; }
 
 /* ---------- 首页 hero ---------- */
@@ -289,24 +325,33 @@ h2 { font-size: 1.4rem; line-height: 1.4; margin: 2.5rem 0 1rem; }
 
 /* ---------- 轨迹时间线 ---------- */
 
+/* 三栏时间线：左=时间段，中=时间轴圆点，右=故事正文（限制阅读行宽） */
 .timeline { list-style: none; margin: 0; padding: 0; position: relative; }
 .timeline::before {
   content: '';
   position: absolute;
-  left: 1.19rem;
+  left: calc(11rem + 1.2rem);
   top: 0.5rem;
   bottom: 0.5rem;
   width: 2px;
   background: var(--line);
 }
 
-.chapter { position: relative; display: flex; gap: 1.25rem; padding: 0 0 2.75rem; }
+.chapter {
+  position: relative;
+  display: grid;
+  grid-template-columns: 11rem 2.4rem minmax(0, 40rem);
+  column-gap: 1.5rem;
+  align-items: start;
+  padding: 0 0 3rem;
+}
 .chapter:last-child { padding-bottom: 0.5rem; }
+
+.chapter-aside { text-align: right; padding-top: 0.45rem; }
 
 .chapter-marker {
   position: relative;
   z-index: 1;
-  flex: none;
   width: 2.4rem;
   height: 2.4rem;
   border-radius: 50%;
@@ -323,13 +368,22 @@ h2 { font-size: 1.4rem; line-height: 1.4; margin: 2.5rem 0 1rem; }
   font-family: var(--mono);
   font-size: 0.78rem;
   color: var(--accent);
-  letter-spacing: 0.1em;
-  margin: 0.35rem 0 0.2rem;
+  letter-spacing: 0.08em;
+  margin: 0;
+  line-height: 1.6;
 }
 .chapter h2 { margin: 0 0 0.3rem; font-size: 1.25rem; }
 .chapter .head-en { display: inline; margin-left: 0.5rem; font-size: 0.85rem; }
 .chapter-tagline { color: var(--muted); margin: 0 0 0.6rem; }
 .chapter-body p { margin: 0.4rem 0; }
+
+@media (max-width: 820px) {
+  .timeline::before { left: 1.19rem; }
+  .chapter { grid-template-columns: 2.4rem minmax(0, 1fr); column-gap: 1.25rem; }
+  .chapter-aside { grid-column: 2; text-align: left; padding-top: 0; margin-bottom: 0.3rem; }
+  .chapter-marker { grid-column: 1; grid-row: 1 / span 2; }
+  .chapter-body { grid-column: 2; }
+}
 
 /* ---------- 作品卡片 ---------- */
 
@@ -380,9 +434,22 @@ h2 { font-size: 1.4rem; line-height: 1.4; margin: 2.5rem 0 1rem; }
 
 /* ---------- 收藏夹 ---------- */
 
-.folder { margin: 0 0 2.75rem; }
-.folder h2 { margin-bottom: 0.2rem; }
-.folder-blurb { color: var(--muted); margin: 0 0 0.5rem; font-size: 0.92rem; }
+/* 收藏夹卡片网格：填满宽度，不再单列贴左 */
+.folder-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+  gap: 1.25rem;
+  align-items: start;
+}
+.folder {
+  margin: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 1.2rem 1.4rem 1.3rem;
+}
+.folder h2 { margin: 0 0 0.2rem; font-size: 1.15rem; }
+.folder-blurb { color: var(--muted); margin: 0 0 0.5rem; font-size: 0.9rem; }
 
 .bookmark-list { list-style: none; margin: 0; padding: 0; }
 .bookmark-list li { padding: 0.7rem 0; border-bottom: 1px dashed var(--line); }

@@ -20,48 +20,58 @@ const tags = Object.entries(tagCounts).sort((a, b) => b[1] - a[1]);
   <p class="lede lang-zh">做自己的 journalist：不追热点，只发表自己真正想清楚了的东西。</p>
   <p class="lede lang-en">Being my own journalist — publishing only what I've actually thought through.</p>
 
-  <section class="tag-entries">
-    <h2><span class="lang-zh">分类入口</span><span class="lang-en">Browse by topic</span></h2>
-    <div class="tag-chips">
-      {
-        tags.map(([t, n]) => (
-          <a class="tag-chip" href={`/writing/tag/${encodeURIComponent(t)}/`}>
-            #{t} <span class="tag-count">{n}</span>
-          </a>
-        ))
-      }
+  <div class="split-layout">
+    <div class="split-main">
+      <h2><span class="lang-zh">全部文章</span><span class="lang-en">All posts</span></h2>
+      <ul class="post-list">
+        {
+          posts.map((post) => (
+            <li>
+              <a class="post-title" href={`/writing/${post.id}/`}>{post.data.title}</a>
+              <div class="post-meta">
+                <span>{fmt(post.data.date)}</span>
+                <span class="badge badge-lang">
+                  {post.data.lang === 'zh' ? (
+                    <>
+                      <span class="lang-zh">中文</span><span class="lang-en">CN</span>
+                    </>
+                  ) : (
+                    'EN'
+                  )}
+                </span>
+                {post.data.translation && (
+                  <span class="badge badge-lang">
+                    <span class="lang-zh">双语</span><span class="lang-en">Bilingual</span>
+                  </span>
+                )}
+                {post.data.tags.map((t) => (
+                  <a class="badge badge-tag" href={`/writing/tag/${encodeURIComponent(t)}/`}>#{t}</a>
+                ))}
+              </div>
+              {post.data.summary && <p class="post-summary">{post.data.summary}</p>}
+            </li>
+          ))
+        }
+      </ul>
     </div>
-  </section>
 
-  <h2><span class="lang-zh">全部文章</span><span class="lang-en">All posts</span></h2>
-  <ul class="post-list">
-    {
-      posts.map((post) => (
-        <li>
-          <a class="post-title" href={`/writing/${post.id}/`}>{post.data.title}</a>
-          <div class="post-meta">
-            <span>{fmt(post.data.date)}</span>
-            <span class="badge badge-lang">
-              {post.data.lang === 'zh' ? (
-                <>
-                  <span class="lang-zh">中文</span><span class="lang-en">CN</span>
-                </>
-              ) : (
-                'EN'
-              )}
-            </span>
-            {post.data.translation && (
-              <span class="badge badge-lang">
-                <span class="lang-zh">双语</span><span class="lang-en">Bilingual</span>
-              </span>
-            )}
-            {post.data.tags.map((t) => (
-              <a class="badge badge-tag" href={`/writing/tag/${encodeURIComponent(t)}/`}>#{t}</a>
-            ))}
-          </div>
-          {post.data.summary && <p class="post-summary">{post.data.summary}</p>}
-        </li>
-      ))
-    }
-  </ul>
+    <aside class="split-side">
+      <h2 class="side-heading">
+        <span class="lang-zh">分类入口</span><span class="lang-en">Browse by topic</span>
+      </h2>
+      <div class="tag-chips tag-chips-stacked">
+        {
+          tags.map(([t, n]) => (
+            <a class="tag-chip" href={`/writing/tag/${encodeURIComponent(t)}/`}>
+              #{t} <span class="tag-count">{n}</span>
+            </a>
+          ))
+        }
+      </div>
+      <p class="side-note">
+        <span class="lang-zh">标签由我在写文章时随手创建，点进去是同类别的全部文章。</span>
+        <span class="lang-en">Topics are created as I write; each one opens every post filed under it.</span>
+      </p>
+    </aside>
+  </div>
 </Base>

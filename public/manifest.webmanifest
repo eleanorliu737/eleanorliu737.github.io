@@ -1,0 +1,35 @@
+{
+  "name": "Eleanor Liu · Journey, Works, Writing & Library",
+  "short_name": "Eleanor",
+  "description": "Eleanor Liu 的个人网站：轨迹、作品、文章与收藏。A personal corner of the internet.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#faf6f0",
+  "theme_color": "#faf6f0",
+  "lang": "zh-CN",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    {
+      "src": "/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "写点东西 · Write",
+      "short_name": "Write",
+      "url": "/admin/",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "文章 · Writing",
+      "short_name": "Writing",
+      "url": "/writing/"
+    }
+  ]
+}

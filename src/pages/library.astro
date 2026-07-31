@@ -9,6 +9,7 @@ import folders from '../data/bookmarks.json';
   <p class="lede lang-zh">互联网上的好文章不该只活在浏览器书签里。这里是我的公开收藏馆，按收藏夹分类，每条都附一句为什么值得读。</p>
   <p class="lede lang-en">Great things on the internet deserve better than a browser bookmark. Sorted into folders, each with a note on why it's worth your time.</p>
 
+  <div class="folder-grid">
   {
     folders.map((f) => (
       <section class="folder">
@@ -58,4 +59,5 @@ import folders from '../data/bookmarks.json';
       </section>
     ))
   }
+  </div>
 </Base>

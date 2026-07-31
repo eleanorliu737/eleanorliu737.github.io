@@ -16,7 +16,7 @@ const posts = (await getCollection('posts', ({ data }) => !data.draft && data.ta
 const fmt = (d: Date) => d.toISOString().slice(0, 10);
 ---
 
-<Base title={`#${tag}`} active="writing">
+<Base title={`#${tag}`} active="writing" width="reading">
   <p class="back-link" style="margin-bottom:1rem">
     <a href="/writing/">
       <span class="lang-zh">← 返回文章列表</span>

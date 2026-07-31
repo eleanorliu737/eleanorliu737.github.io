@@ -17,7 +17,12 @@ marked.setOptions({ breaks: true, gfm: true });
 const translationHtml = post.data.translation ? marked.parse(post.data.translation) : null;
 ---
 
-<Base title={post.data.title} description={post.data.summary} active="writing">
+<Base
+  title={post.data.title}
+  description={post.data.summary}
+  active="writing"
+  width={translationHtml ? 'wide' : 'reading'}
+>
   <article>
     <header class="article-head">
       <p class="back-link">

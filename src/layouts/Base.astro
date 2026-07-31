@@ -5,12 +5,15 @@ interface Props {
   title?: string;
   description?: string;
   active?: string;
+  /** wide = 双栏/网格页（默认）；reading = 单列长文，收窄并居中，保证阅读行宽舒适 */
+  width?: 'wide' | 'reading';
 }
 
 const {
   title,
   description = "Eleanor Liu's personal site: journey, works, writing, and a library of good reads. Eleanor Liu 的个人网站：轨迹、作品、文章与收藏。",
   active = '',
+  width = 'wide',
 } = Astro.props;
 
 const pageTitle = title ? `${title} · Eleanor Liu` : 'Eleanor Liu · Journey, Works, Writing & Library';
@@ -43,6 +46,14 @@ const nav = [
       rel="icon"
       href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌱</text></svg>"
     />
+    <!-- PWA：手机上「添加到主屏幕」后可像 App 一样全屏运行 -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#faf6f0" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#17140f" media="(prefers-color-scheme: dark)" />
+    <link rel="apple-touch-icon" href="/icons/icon-180.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Eleanor" />
     <script is:inline>
       // 在页面渲染前恢复上次的语言选择，避免闪烁；默认英文
       (function () {
@@ -104,7 +115,7 @@ const nav = [
       </div>
     </header>
 
-    <main class="site-main">
+    <main class:list={['site-main', width === 'reading' && 'site-main-reading']}>
       <slot />
     </main>
 

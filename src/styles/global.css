@@ -497,25 +497,31 @@ h2 { font-size: 1.4rem; line-height: 1.4; margin: 2.5rem 0 1rem; }
 }
 .activity-scroll { overflow-x: auto; padding-bottom: 0.25rem; }
 
-.activity-months { display: flex; gap: 3px; margin-bottom: 4px; }
+/* 横向拉宽、纵向高度不变：格子加宽但不加高，列间距独立于行间距 */
+.activity-months { display: flex; column-gap: 5px; margin-bottom: 5px; }
 .a-month-label {
   flex: none;
-  width: 11px;
+  width: 42px;
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: 11px;
   color: var(--muted);
   white-space: nowrap;
   overflow: visible;
 }
 
-.activity-grid { display: flex; gap: 3px; width: max-content; }
-.a-week { display: flex; flex-direction: column; gap: 3px; }
+.activity-grid { display: flex; column-gap: 5px; width: max-content; }
+.a-week { display: flex; flex-direction: column; row-gap: 3px; }
 .a-day {
   display: inline-block;
-  width: 11px;
+  width: 42px;
   height: 11px;
   border-radius: 3px;
   flex: none;
+}
+/* 窄屏时缩小格子，避免横向滚动条太长 */
+@media (max-width: 900px) {
+  .a-day { width: 22px; }
+  .a-month-label { width: 22px; }
 }
 .a-quiet { background: var(--line); opacity: 0.45; }
 .a-future { background: none; border: 1px dashed var(--line); }
@@ -533,7 +539,7 @@ h2 { font-size: 1.4rem; line-height: 1.4; margin: 2.5rem 0 1rem; }
   color: var(--muted);
 }
 .a-legend-item { display: inline-flex; align-items: center; gap: 0.4rem; }
-.a-legend-item .a-day { width: 10px; height: 10px; }
+.a-legend-item .a-day { width: 18px; height: 10px; }
 
 /* ---------- 收藏夹折叠 ---------- */
 

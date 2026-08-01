@@ -6,7 +6,13 @@
       "nameEn": "AI Book Finder",
       "desc": "基于 RAG 和实时用户画像的 LLM 图书推荐系统：跟它聊几句，它就知道你现在适合读什么书。",
       "descEn": "An LLM book recommender built on RAG and live user profiling — chat a little, and it figures out what you should read next.",
-      "stack": ["Python", "FastAPI", "Streamlit", "ChromaDB", "RAG"],
+      "stack": [
+        "Python",
+        "FastAPI",
+        "Streamlit",
+        "ChromaDB",
+        "RAG"
+      ],
       "link": "https://github.com/eleanorliu737",
       "status": "✅ 已完成 MVP",
       "statusEn": "✅ MVP shipped"
@@ -17,7 +23,11 @@
       "nameEn": "This Very Site",
       "desc": "你正在看的这个网站本身也是一个作品：Astro 静态站，所有内容都是 Markdown 和几个小数据文件，零数据库、零维护成本。",
       "descEn": "The site you are looking at is a project too: a static Astro site where every piece of content is just Markdown and a few tiny data files.",
-      "stack": ["Astro", "TypeScript", "CSS"],
+      "stack": [
+        "Astro",
+        "TypeScript",
+        "CSS"
+      ],
       "link": "/about/",
       "status": "🚧 永远施工中",
       "statusEn": "🚧 Forever under construction"
@@ -38,6 +48,11 @@
       "emoji": "📖",
       "text": "用 LLM 给每本读过的书生成一句「值得再读的理由」。",
       "textEn": "Use an LLM to generate a one-line “reason to reread” for every book I’ve read."
+    },
+    {
+      "emoji": "💡",
+      "text": "把中文博客转过来，要么AI转，要么我自己来",
+      "textEn": ""
     }
   ]
 }

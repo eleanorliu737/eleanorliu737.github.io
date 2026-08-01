@@ -101,7 +101,18 @@ const BRANCH = 'main';
                 <button id="btn-post-image" class="admin-btn ghost small" type="button">🖼 插入图片</button>
                 <input id="post-image-file" type="file" accept="image/*" hidden />
               </div>
-              <textarea id="post-body" class="f-input f-body" placeholder="直接打字就行，写出来什么样、发布后就显示什么样。&#10;&#10;换行 = 换行显示。&#10;行首写「## 」 = 小标题。&#10;两个星号包住文字 = **加粗**。&#10;插入图片请用上面的「🖼 插入图片」按钮。"></textarea>
+              <textarea
+                id="post-body"
+                class="f-input f-body"
+                autocapitalize="sentences"
+                autocorrect="on"
+                spellcheck="false"
+                placeholder="直接打字就行，写出来什么样、发布后就显示什么样。&#10;&#10;换行 = 换行显示。&#10;行首写「## 」 = 小标题。&#10;两个星号包住文字 = **加粗**。&#10;插入图片请用上面的「🖼 插入图片」按钮。"
+              ></textarea>
+              <p class="body-meta">
+                <span id="post-count">0 字</span>
+                <span id="post-draft" class="draft-dot"></span>
+              </p>
               <label class="f-check">
                 <input type="checkbox" id="post-featured" /> 🏠 在首页「精选文章」里显示这篇
               </label>
@@ -123,9 +134,9 @@ const BRANCH = 'main';
                   <button id="btn-apikey-save" class="admin-btn small" type="button">保存 Key 并继续</button>
                 </div>
               </div>
-              <div class="form-actions">
+              <div class="form-actions sticky-actions">
                 <button id="btn-post-save" class="admin-btn" type="button">发布这篇文章</button>
-                <button id="btn-post-delete" class="admin-btn danger" type="button" hidden>删除这篇文章</button>
+                <button id="btn-post-delete" class="admin-btn danger" type="button" hidden>删除</button>
               </div>
               <p id="post-msg" class="admin-msg"></p>
             </div>
@@ -201,31 +212,35 @@ const BRANCH = 'main';
           <p id="wk-msg" class="admin-msg"></p>
         </div>
 
-        <!-- ============ 求职打卡 ============ -->
+        <!-- ============ 每日打卡 ============ -->
         <div id="tab-jobtrack" class="tab-panel" hidden>
-          <div class="form-panel add-box">
-            <p class="box-title">📆 记录一天的动态</p>
-            <p class="admin-hint">记录会汇入首页的「动态」日历（发文章、收藏是自动记录的，不用在这里填）。</p>
-            <div class="f-row">
-              <label class="f-field f-narrow"><span class="f-label">日期</span>
-                <input id="jt-date" type="date" class="f-input" />
-              </label>
-              <label class="f-field f-narrow"><span class="f-label">投出简历（份）</span>
-                <input id="jt-applied" type="number" min="0" class="f-input" value="0" />
-              </label>
-              <label class="f-field f-narrow"><span class="f-label">收到回复（个）</span>
-                <input id="jt-replies" type="number" min="0" class="f-input" value="0" />
-              </label>
+          <div class="checkin-datebar">
+            <button id="jt-prev" class="step-btn" type="button" aria-label="前一天">‹</button>
+            <div class="checkin-dateinfo">
+              <input id="jt-date" type="date" class="checkin-date" />
+              <span id="jt-daylabel" class="checkin-daylabel"></span>
             </div>
-            <label class="f-check"><input type="checkbox" id="jt-interview" /> 📞 这天收到或参加了面试</label>
-            <label class="f-check"><input type="checkbox" id="jt-project" /> 🛠 这天推进了项目</label>
-            <label class="f-check"><input type="checkbox" id="jt-study" /> 📖 这天学习了新东西</label>
-            <div class="form-actions">
-              <button id="btn-jt-save" class="admin-btn" type="button">记录并发布</button>
-            </div>
-            <p id="jt-msg" class="admin-msg"></p>
+            <button id="jt-next" class="step-btn" type="button" aria-label="后一天">›</button>
           </div>
-          <p class="side-caption">已有记录（点日期可修改，✕ 删除）：</p>
+
+          <div id="jt-cards" class="checkin-cards"></div>
+          <p id="jt-msg" class="admin-msg jt-msg"></p>
+
+          <details class="manage-box">
+            <summary>⚙️ 管理打卡项目（增加 / 修改 / 删除）</summary>
+            <p class="admin-hint">
+              「计数」型可以记数量（投了几份简历），「打卡」型只记做没做（今天弹琴了）。
+              颜色会显示在首页动态日历上。
+            </p>
+            <div id="jt-act-list"></div>
+            <div class="form-actions">
+              <button id="btn-act-add" class="admin-btn ghost small" type="button">➕ 新增一个打卡项目</button>
+              <button id="btn-act-save" class="admin-btn" type="button">保存项目设置</button>
+            </div>
+            <p id="act-msg" class="admin-msg"></p>
+          </details>
+
+          <p class="side-caption">最近的记录（点一下跳到那天）：</p>
           <ul id="jt-list" class="bm-items"></ul>
         </div>
       </section>
@@ -338,6 +353,82 @@ const BRANCH = 'main';
       }
       .del-btn:hover { color: #c0392b; }
 
+      /* ============ 每日打卡 ============ */
+      .checkin-datebar {
+        display: flex; align-items: center; gap: 0.6rem;
+        background: var(--bg-card); border: 1px solid var(--line);
+        border-radius: 14px; padding: 0.5rem 0.6rem; margin-bottom: 1rem;
+      }
+      .checkin-dateinfo { flex: 1; text-align: center; }
+      .checkin-date {
+        font-family: var(--mono); font-size: 1rem; color: var(--ink);
+        background: none; border: none; text-align: center; width: 100%;
+      }
+      .checkin-daylabel { display: block; font-size: 0.78rem; color: var(--muted); margin-top: 1px; }
+
+      .step-btn {
+        flex: none; width: 44px; height: 44px; border-radius: 12px;
+        background: var(--bg); border: 1px solid var(--line);
+        color: var(--ink); font-size: 1.35rem; line-height: 1; cursor: pointer;
+        display: grid; place-items: center; -webkit-tap-highlight-color: transparent;
+      }
+      .step-btn:active { transform: scale(0.94); background: var(--accent-soft); }
+
+      .checkin-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); gap: 0.7rem; }
+      .ci-card {
+        --ci: var(--accent);
+        background: var(--bg-card); border: 1.5px solid var(--line);
+        border-radius: 14px; padding: 0.85rem 0.9rem 0.9rem;
+        transition: border-color 0.15s ease, background 0.15s ease;
+      }
+      .ci-card.ci-on { border-color: var(--ci); }
+      .ci-head { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.6rem; }
+      .ci-emoji { font-size: 1.2rem; }
+      .ci-name { font-size: 0.98rem; font-weight: 600; }
+      .ci-card.ci-on .ci-name { color: var(--ci); }
+
+      .ci-stepper { display: flex; align-items: center; gap: 0.6rem; }
+      .ci-value {
+        flex: 1; text-align: center; font-family: var(--mono);
+        font-size: 1.5rem; font-weight: 600; color: var(--ink);
+      }
+      .ci-card.ci-on .ci-value { color: var(--ci); }
+      .step-plus { background: var(--ci); border-color: var(--ci); color: #fff; }
+
+      .ci-toggle {
+        width: 100%; min-height: 44px; border-radius: 12px; cursor: pointer;
+        font: inherit; font-size: 0.95rem;
+        background: var(--bg); border: 1px solid var(--line); color: var(--muted);
+        -webkit-tap-highlight-color: transparent;
+      }
+      .ci-toggle:active { transform: scale(0.98); }
+      .ci-card.ci-on .ci-toggle { background: var(--ci); border-color: var(--ci); color: #fff; font-weight: 600; }
+
+      .jt-msg { margin-top: 1rem; }
+      .jt-pending { color: var(--muted); }
+      .jt-ok { color: #2f9e44; }
+      .jt-err { color: #c0392b; }
+
+      .manage-box {
+        margin: 1.75rem 0 0; border: 1px dashed var(--line);
+        border-radius: 12px; padding: 0.8rem 1rem 1rem;
+      }
+      .manage-box summary { cursor: pointer; font-size: 0.92rem; color: var(--accent); }
+      .act-row {
+        display: flex; align-items: center; gap: 0.5rem;
+        flex-wrap: wrap; padding: 0.55rem 0; border-bottom: 1px dashed var(--line);
+      }
+      .act-emoji {
+        width: 3rem; text-align: center; font-size: 1.15rem; padding: 0.45rem 0;
+        background: var(--bg-card); border: 1px solid var(--line); border-radius: 8px; color: var(--ink);
+      }
+      .act-name { flex: 1 1 8rem; min-width: 0; }
+      .act-type { flex: 0 1 10rem; }
+      .act-color {
+        width: 2.6rem; height: 2.4rem; padding: 2px; cursor: pointer;
+        background: var(--bg-card); border: 1px solid var(--line); border-radius: 8px;
+      }
+
       .bm-folder-block { margin: 1.2rem 0; }
       .bm-folder-name { font-weight: 600; margin: 0 0 0.3rem; }
       .bm-items { list-style: none; margin: 0; padding: 0; }
@@ -346,6 +437,80 @@ const BRANCH = 'main';
         border-bottom: 1px dashed var(--line); font-size: 0.92rem;
       }
       .bm-item-note { color: var(--muted); font-size: 0.85rem; flex: 1; }
+
+      /* ============ 写作区精修 ============ */
+      .f-body {
+        min-height: 50vh;
+        font-family: Georgia, 'Songti SC', 'Noto Serif CJK SC', serif;
+        font-size: 1.02rem;
+        line-height: 1.85;
+        padding: 1.1rem 1.2rem;
+        letter-spacing: 0.01em;
+      }
+      .body-toolbar { gap: 0.6rem; flex-wrap: wrap; }
+      .body-meta {
+        display: flex; gap: 0.9rem; align-items: center;
+        font-family: var(--mono); font-size: 0.72rem; color: var(--muted);
+        margin: 0.35rem 0 0;
+      }
+      .draft-dot { color: var(--accent); }
+
+      /* ============ 手机端（iPhone 优先） ============ */
+      @media (max-width: 720px) {
+        .admin-main {
+          padding-left: max(1rem, env(safe-area-inset-left));
+          padding-right: max(1rem, env(safe-area-inset-right));
+          /* 给底部固定的保存条留出空间 + iPhone 底部横条 */
+          padding-bottom: calc(5.5rem + env(safe-area-inset-bottom));
+        }
+        /* iOS 上输入框字号小于 16px 会在聚焦时自动放大页面，这里锁死 16px */
+        .f-input, .admin-card input, .checkin-date, .act-emoji {
+          font-size: 16px;
+        }
+        .admin-header { margin-bottom: 1rem; }
+
+        /* 标签栏横向滑动，不再换行 */
+        .tab-bar {
+          flex-wrap: nowrap; overflow-x: auto; gap: 0.15rem;
+          scrollbar-width: none; -ms-overflow-style: none;
+          margin-left: -1rem; margin-right: -1rem;
+          padding: 0 1rem;
+        }
+        .tab-bar::-webkit-scrollbar { display: none; }
+        .tab-btn { white-space: nowrap; padding: 0.6rem 0.7rem; font-size: 0.92rem; }
+
+        /* 文章：列表和编辑区上下排列，选中文章后自动滚到编辑区 */
+        .posts-grid { grid-template-columns: 1fr; gap: 1.2rem; }
+        .post-picker { max-height: 12rem; overflow-y: auto; }
+
+        .checkin-cards { grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+        .ci-card { padding: 0.75rem 0.7rem 0.8rem; }
+        .ci-name { font-size: 0.9rem; }
+        .f-row { flex-direction: column; gap: 0; }
+        .f-narrow { flex: 1 1 auto; }
+
+        .f-body { min-height: 55vh; font-size: 1.05rem; }
+
+        /* 保存按钮固定在屏幕底部，写多长都不用滚回去找 */
+        .form-actions.sticky-actions {
+          position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
+          background: var(--bg); border-top: 1px solid var(--line);
+          padding: 0.6rem max(1rem, env(safe-area-inset-left))
+                   calc(0.6rem + env(safe-area-inset-bottom));
+          margin: 0; gap: 0.6rem;
+        }
+        .sticky-actions .admin-btn { flex: 1; margin-top: 0; min-height: 46px; }
+        .sticky-actions .admin-btn.danger { flex: 0 0 5.5rem; }
+
+        .act-row { gap: 0.4rem; }
+        .act-name { flex: 1 1 100%; }
+        .act-type { flex: 1 1 auto; }
+      }
+
+      /* 只有很窄的老手机才退回单列 */
+      @media (max-width: 340px) {
+        .checkin-cards { grid-template-columns: 1fr; }
+      }
     </style>
 
     <script define:vars={{ OWNER, REPO, BRANCH }}>
@@ -682,8 +847,12 @@ const BRANCH = 'main';
         $('btn-post-delete').hidden = false;
         $('btn-post-save').textContent = '保存修改并发布';
         $('post-msg').textContent = '';
+        $('post-draft').textContent = '';
         showPostForm(true);
         renderPostList();
+        updateCount();
+        offerDraftRestore(p.path);
+        if (window.innerWidth <= 720) $('post-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
       $('btn-post-new').addEventListener('click', () => {
         const stamp = new Date();
@@ -702,8 +871,11 @@ const BRANCH = 'main';
         $('btn-post-delete').hidden = true;
         $('btn-post-save').textContent = '发布这篇文章';
         $('post-msg').textContent = '';
+        $('post-draft').textContent = '';
         showPostForm(true);
         renderPostList();
+        updateCount();
+        if (window.innerWidth <= 720) $('post-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
         $('post-title').focus();
       });
       $('btn-post-save').addEventListener('click', async () => {
@@ -732,6 +904,7 @@ const BRANCH = 'main';
           renderPostList();
           $('btn-post-delete').hidden = false;
           $('btn-post-save').textContent = '保存修改并发布';
+          clearDraft();
           msg.textContent = OK_MSG;
         } catch (e) {
           msg.textContent = '❌ ' + e.message;
@@ -754,6 +927,50 @@ const BRANCH = 'main';
           msg.textContent = '❌ ' + e.message;
         }
       });
+
+      // ---- 字数统计 + 本地草稿（写到一半被打断也不丢） ----
+      const DRAFT_KEY = 'post-draft';
+      function updateCount() {
+        const t = $('post-body').value;
+        const cjk = (t.match(/[一-龥]/g) || []).length;
+        const words = (t.replace(/[一-龥]/g, ' ').match(/[A-Za-z0-9'’-]+/g) || []).length;
+        $('post-count').textContent = cjk + words + ' 字';
+      }
+      function saveDraft() {
+        const cp = state.currentPost;
+        if (!cp) return;
+        try {
+          localStorage.setItem(DRAFT_KEY, JSON.stringify({
+            path: cp.path,
+            title: $('post-title').value,
+            body: $('post-body').value,
+            at: Date.now(),
+          }));
+        } catch (e) {}
+        $('post-draft').textContent = '· 草稿已存本机';
+      }
+      ['input', 'change'].forEach((ev) => {
+        $('post-body').addEventListener(ev, () => { updateCount(); saveDraft(); });
+        $('post-title').addEventListener(ev, saveDraft);
+      });
+      function clearDraft() {
+        try { localStorage.removeItem(DRAFT_KEY); } catch (e) {}
+        $('post-draft').textContent = '';
+      }
+      // 打开一篇文章时，如果本机存着更新的草稿，问要不要恢复
+      function offerDraftRestore(path) {
+        let d;
+        try { d = JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null'); } catch (e) { return; }
+        if (!d || d.path !== path || d.body === $('post-body').value) return;
+        const when = new Date(d.at).toLocaleString('zh-CN', { hour12: false }).slice(5, 16);
+        if (confirm(`本机存有 ${when} 的未发布草稿，要恢复吗？\n（选取消则继续用已发布的版本）`)) {
+          $('post-title').value = d.title;
+          $('post-body').value = d.body;
+          updateCount();
+        } else {
+          clearDraft();
+        }
+      }
 
       // ============================================================
       // 🖼 图片上传：传到仓库 public/images/posts/，并把图片语法插入正文光标处
@@ -1167,80 +1384,233 @@ const BRANCH = 'main';
       });
 
       // ============================================================
-      // 🎯 求职打卡
+      // 📆 每日打卡：点一下就记，自动保存，无需按发布
       // ============================================================
+      const PALETTE = ['#4dabf7', '#20c997', '#7048e8', '#2f9e44', '#f06595', '#c2255c',
+                       '#1098ad', '#f76707', '#5c940d', '#ae3ec9', '#0ca678', '#495057'];
+      let saveTimer = null;
+
       async function loadJobtrack() {
-        const file = await getFile('src/data/jobtrack.json');
+        const file = await getFile('src/data/checkins.json');
         state.jobtrack = { sha: file.sha, data: JSON.parse(file.text) };
+        if (!state.jobtrack.data.activities) state.jobtrack.data.activities = [];
+        if (!state.jobtrack.data.log) state.jobtrack.data.log = {};
         $('jt-date').value = today();
-        renderJobtrack();
+        renderCheckin();
+        renderActivityManager();
+        renderRecentLog();
       }
-      function renderJobtrack() {
+      const curDate = () => $('jt-date').value || today();
+      function dayRecord() {
+        const d = state.jobtrack.data.log;
+        if (!d[curDate()]) d[curDate()] = {};
+        return d[curDate()];
+      }
+      function setDayLabel() {
+        const d = curDate();
+        const t = today();
+        const diff = Math.round((Date.parse(d) - Date.parse(t)) / 86400000);
+        const wd = ['周日','周一','周二','周三','周四','周五','周六'][new Date(d + 'T00:00:00Z').getUTCDay()];
+        $('jt-daylabel').textContent =
+          diff === 0 ? `今天 · ${wd}` : diff === -1 ? `昨天 · ${wd}` : `${wd}`;
+      }
+
+      // 打卡卡片：计数型有 −/+ 步进，打卡型是一个大按钮
+      function renderCheckin() {
+        setDayLabel();
+        const box = $('jt-cards');
+        box.innerHTML = '';
+        const rec = state.jobtrack.data.log[curDate()] || {};
+        state.jobtrack.data.activities.forEach((a) => {
+          const n = rec[a.id] || 0;
+          const card = el('div', 'ci-card' + (n ? ' ci-on' : ''));
+          card.style.setProperty('--ci', a.color);
+
+          const head = el('div', 'ci-head');
+          head.appendChild(el('span', 'ci-emoji', a.emoji));
+          head.appendChild(el('span', 'ci-name', a.zh));
+          card.appendChild(head);
+
+          if (a.type === 'count') {
+            const ctl = el('div', 'ci-stepper');
+            const minus = el('button', 'step-btn', '−');
+            minus.type = 'button';
+            minus.addEventListener('click', () => bump(a.id, -1));
+            const val = el('span', 'ci-value', String(n));
+            const plus = el('button', 'step-btn step-plus', '+');
+            plus.type = 'button';
+            plus.addEventListener('click', () => bump(a.id, 1));
+            ctl.append(minus, val, plus);
+            card.appendChild(ctl);
+          } else {
+            const btn = el('button', 'ci-toggle', n ? '✓ 已完成' : '点一下打卡');
+            btn.type = 'button';
+            btn.addEventListener('click', () => bump(a.id, n ? -1 : 1, true));
+            card.appendChild(btn);
+          }
+          box.appendChild(card);
+        });
+        if (!state.jobtrack.data.activities.length) {
+          box.appendChild(el('p', 'admin-hint', '还没有打卡项目，点下面的「管理打卡项目」加一个吧。'));
+        }
+      }
+      function bump(id, delta, isToggle) {
+        const rec = dayRecord();
+        const next = isToggle ? Math.max(0, delta > 0 ? 1 : 0) : Math.max(0, (rec[id] || 0) + delta);
+        if (next === 0) delete rec[id];
+        else rec[id] = next;
+        if (!Object.keys(rec).length) delete state.jobtrack.data.log[curDate()];
+        if (navigator.vibrate) navigator.vibrate(8);
+        renderCheckin();
+        queueSave();
+      }
+      // 改完 1.2 秒后自动保存，避免连点时反复提交
+      function queueSave() {
+        const msg = $('jt-msg');
+        msg.textContent = '已记录，稍后自动保存…';
+        msg.className = 'admin-msg jt-msg jt-pending';
+        clearTimeout(saveTimer);
+        saveTimer = setTimeout(async () => {
+          msg.textContent = '保存中…';
+          try {
+            await saveCheckins(`Check-in: ${curDate()}`);
+            msg.textContent = '✅ 已保存并发布，网站 1-2 分钟后更新';
+            msg.className = 'admin-msg jt-msg jt-ok';
+            renderRecentLog();
+          } catch (e) {
+            msg.textContent = '❌ ' + e.message;
+            msg.className = 'admin-msg jt-msg jt-err';
+          }
+        }, 1200);
+      }
+      async function saveCheckins(message) {
+        state.jobtrack.sha = await putFile(
+          'src/data/checkins.json',
+          JSON.stringify(state.jobtrack.data, null, 2) + '\n',
+          message,
+          state.jobtrack.sha
+        );
+      }
+      function shiftDay(n) {
+        const d = new Date(curDate() + 'T00:00:00Z');
+        d.setUTCDate(d.getUTCDate() + n);
+        $('jt-date').value = d.toISOString().slice(0, 10);
+        renderCheckin();
+      }
+      $('jt-prev').addEventListener('click', () => shiftDay(-1));
+      $('jt-next').addEventListener('click', () => shiftDay(1));
+      $('jt-date').addEventListener('change', renderCheckin);
+
+      function renderRecentLog() {
         const list = $('jt-list');
         list.innerHTML = '';
-        const entries = Object.entries(state.jobtrack.data).sort((a, b) => b[0].localeCompare(a[0]));
-        if (!entries.length) list.appendChild(el('li', 'bm-item-note', '还没有记录，从上面开始第一天的打卡吧 💪'));
+        const acts = state.jobtrack.data.activities;
+        const entries = Object.entries(state.jobtrack.data.log).sort((a, b) => b[0].localeCompare(a[0])).slice(0, 14);
+        if (!entries.length) return list.appendChild(el('li', 'bm-item-note', '还没有记录，从今天开始 💪'));
         entries.forEach(([date, rec]) => {
+          const summary = acts
+            .filter((a) => rec[a.id])
+            .map((a) => `${a.emoji}${rec[a.id] > 1 ? '×' + rec[a.id] : ''}`)
+            .join(' ');
           const li = el('li');
-          const btn = el(
-            'button',
-            'file-btn',
-            `${date} · 投 ${rec.applied || 0} · 回复 ${rec.replies || 0} · 面试 ${rec.interview ? '✅' : '—'} · 项目 ${rec.project ? '✅' : '—'} · 学习 ${rec.study ? '✅' : '—'}`
-          );
+          const btn = el('button', 'file-btn', `${date}   ${summary}`);
           btn.type = 'button';
           btn.style.width = 'auto';
-          btn.addEventListener('click', () => {
-            $('jt-date').value = date;
-            $('jt-applied').value = rec.applied || 0;
-            $('jt-replies').value = rec.replies || 0;
-            $('jt-interview').checked = !!rec.interview;
-            $('jt-project').checked = !!rec.project;
-            $('jt-study').checked = !!rec.study;
-          });
+          btn.addEventListener('click', () => { $('jt-date').value = date; renderCheckin(); });
           li.appendChild(btn);
           const del = el('button', 'del-btn', '✕');
           del.type = 'button';
           del.addEventListener('click', async () => {
-            if (!confirm(`删除 ${date} 的记录？`)) return;
-            delete state.jobtrack.data[date];
-            await saveJobtrack(`Remove job tracking for ${date}`);
+            if (!confirm(`删除 ${date} 的全部记录？`)) return;
+            delete state.jobtrack.data.log[date];
+            renderCheckin();
+            await saveCheckins(`Remove check-in for ${date}`);
+            renderRecentLog();
           });
           li.appendChild(del);
           list.appendChild(li);
         });
       }
-      async function saveJobtrack(message) {
-        const msg = $('jt-msg');
-        msg.textContent = '发布中…';
+
+      // ---- 打卡项目管理 ----
+      function renderActivityManager() {
+        const box = $('jt-act-list');
+        box.innerHTML = '';
+        state.jobtrack.data.activities.forEach((a, i) => {
+          const card = el('div', 'act-row');
+          const emoji = el('input', 'act-emoji');
+          emoji.value = a.emoji;
+          emoji.addEventListener('input', () => { a.emoji = emoji.value; });
+
+          const zh = el('input', 'f-input act-name');
+          zh.placeholder = '中文名，例：弹琴';
+          zh.value = a.zh;
+          zh.addEventListener('input', () => { a.zh = zh.value; a.id = a.id || slugify(zh.value); });
+
+          const en = el('input', 'f-input act-name');
+          en.placeholder = 'English, e.g. Piano';
+          en.value = a.en;
+          en.addEventListener('input', () => { a.en = en.value; });
+
+          const type = el('select', 'f-input act-type');
+          [['count', '计数（记数量）'], ['toggle', '打卡（做没做）']].forEach(([v, t]) => {
+            const o = el('option', '', t);
+            o.value = v;
+            type.appendChild(o);
+          });
+          type.value = a.type;
+          type.addEventListener('change', () => { a.type = type.value; renderCheckin(); });
+
+          const color = el('input', 'act-color');
+          color.type = 'color';
+          color.value = a.color;
+          color.addEventListener('input', () => { a.color = color.value; });
+
+          const del = el('button', 'del-btn', '✕');
+          del.type = 'button';
+          del.addEventListener('click', () => {
+            if (!confirm(`删除打卡项目「${a.zh}」？已有的历史记录不会被删除。`)) return;
+            state.jobtrack.data.activities.splice(i, 1);
+            renderActivityManager();
+            renderCheckin();
+          });
+
+          card.append(emoji, zh, en, type, color, del);
+          box.appendChild(card);
+        });
+      }
+      const slugify = (s) =>
+        (s || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') ||
+        'act-' + Math.random().toString(36).slice(2, 7);
+
+      $('btn-act-add').addEventListener('click', () => {
+        const used = state.jobtrack.data.activities.length;
+        state.jobtrack.data.activities.push({
+          id: 'act-' + Math.random().toString(36).slice(2, 7),
+          emoji: '⭐',
+          zh: '',
+          en: '',
+          color: PALETTE[used % PALETTE.length],
+          type: 'toggle',
+        });
+        renderActivityManager();
+      });
+      $('btn-act-save').addEventListener('click', async () => {
+        const msg = $('act-msg');
+        const acts = state.jobtrack.data.activities;
+        for (const a of acts) {
+          if (!a.zh.trim()) return (msg.textContent = '每个项目都要填中文名');
+          if (!a.en.trim()) a.en = a.zh;
+        }
+        msg.textContent = '保存中…';
         try {
-          state.jobtrack.sha = await putFile(
-            'src/data/jobtrack.json',
-            JSON.stringify(state.jobtrack.data, null, 2) + '\n',
-            message,
-            state.jobtrack.sha
-          );
-          renderJobtrack();
+          await saveCheckins('Update check-in activities');
+          renderCheckin();
+          renderRecentLog();
           msg.textContent = OK_MSG;
         } catch (e) {
           msg.textContent = '❌ ' + e.message;
         }
-      }
-      $('btn-jt-save').addEventListener('click', async () => {
-        const date = $('jt-date').value;
-        if (!date) return ($('jt-msg').textContent = '请选择日期');
-        const applied = Math.max(0, Number($('jt-applied').value) || 0);
-        const replies = Math.max(0, Number($('jt-replies').value) || 0);
-        const interview = $('jt-interview').checked;
-        const project = $('jt-project').checked;
-        const study = $('jt-study').checked;
-        if (!applied && !replies && !interview && !project && !study) {
-          delete state.jobtrack.data[date];
-        } else {
-          state.jobtrack.data[date] = { applied, replies, interview, project, study };
-        }
-        $('btn-jt-save').disabled = true;
-        await saveJobtrack(`Daily log: ${date}`);
-        $('btn-jt-save').disabled = false;
       });
 
       init();

@@ -2,7 +2,7 @@
 import { getCollection } from 'astro:content';
 import Base from '../layouts/Base.astro';
 import folders from '../data/bookmarks.json';
-import jobtrackData from '../data/jobtrack.json';
+import checkins from '../data/checkins.json';
 
 const all = (await getCollection('posts', ({ data }) => !data.draft)).sort(
   (a, b) => b.data.date.valueOf() - a.data.date.valueOf()
@@ -17,14 +17,10 @@ const fmt = (d: Date) => d.toISOString().slice(0, 10);
 // ============================================================
 // 统一动态日历（GitHub 贡献图风格）：自 2026-07 起的所有站内动态
 // ============================================================
-interface DayRecord {
-  applied?: number;
-  replies?: number;
-  interview?: boolean;
-  project?: boolean;
-  study?: boolean;
-}
-const track: Record<string, DayRecord> = jobtrackData as any;
+// 打卡项目由我在编辑器里自定义（见 src/data/checkins.json）
+interface Activity { id: string; emoji: string; zh: string; en: string; color: string; type: string }
+const activities: Activity[] = (checkins as any).activities;
+const log: Record<string, Record<string, number>> = (checkins as any).log;
 
 const postCount: Record<string, number> = {};
 all.forEach((p) => {
@@ -38,24 +34,25 @@ const bmCount: Record<string, number> = {};
   })
 );
 
+// 文章和收藏是自动记录的，其余来自打卡
 const CATS: Record<string, { color: string; zh: string; en: string }> = {
   post: { color: '#e8590c', zh: '发表文章', en: 'Writing' },
   bookmark: { color: '#fab005', zh: '收藏好文', en: 'Bookmarks' },
-  applied: { color: '#4dabf7', zh: '投简历', en: 'Applications' },
-  interview: { color: '#7048e8', zh: '面试', en: 'Interviews' },
-  project: { color: '#2f9e44', zh: '做项目', en: 'Projects' },
-  study: { color: '#f06595', zh: '学习', en: 'Learning' },
 };
+activities.forEach((a) => (CATS[a.id] = { color: a.color, zh: a.zh, en: a.en }));
+
+const legend = [
+  { emoji: '✍️', color: CATS.post.color, zh: CATS.post.zh, en: CATS.post.en },
+  { emoji: '🔖', color: CATS.bookmark.color, zh: CATS.bookmark.zh, en: CATS.bookmark.en },
+  ...activities.map((a) => ({ emoji: a.emoji, color: a.color, zh: a.zh, en: a.en })),
+];
 
 function dayActivities(key: string) {
   const acts: { c: string; n: number }[] = [];
   if (postCount[key]) acts.push({ c: 'post', n: postCount[key] });
   if (bmCount[key]) acts.push({ c: 'bookmark', n: bmCount[key] });
-  const jt = track[key];
-  if (jt?.applied) acts.push({ c: 'applied', n: jt.applied });
-  if (jt?.interview) acts.push({ c: 'interview', n: 1 });
-  if (jt?.project) acts.push({ c: 'project', n: 1 });
-  if (jt?.study) acts.push({ c: 'study', n: 1 });
+  const day = log[key];
+  if (day) activities.forEach((a) => { if (day[a.id]) acts.push({ c: a.id, n: day[a.id] }); });
   return acts;
 }
 function cellStyle(acts: { c: string; n: number }[]) {
@@ -69,9 +66,7 @@ function cellStyle(acts: { c: string; n: number }[]) {
 }
 function cellTitle(key: string, acts: { c: string; n: number }[], lang: 'zh' | 'en') {
   if (!acts.length) return key;
-  const jt = track[key];
   const parts = acts.map((a) => `${CATS[a.c][lang]}${a.n > 1 ? ' ×' + a.n : ''}`);
-  if (jt?.replies) parts.push(`${lang === 'zh' ? '收到回复' : 'Replies'} ×${jt.replies}`);
   return `${key} · ${parts.join(' · ')}`;
 }
 
@@ -176,8 +171,8 @@ while (cursor <= END) {
       <span class="activity-since">2026.07 — 2026.10</span>
     </h2>
     <p class="activity-hint">
-      <span class="lang-zh">写文章、收藏、投简历、面试、做项目、学习——每一天的痕迹。距离 10 月底还有 {daysLeft} 天。</span>
-      <span class="lang-en">Writing, bookmarks, applications, interviews, projects, learning — traces of each day. {daysLeft} days left until the end of October.</span>
+      <span class="lang-zh">每一天留下的痕迹：写作、收藏、求职、练习。距离 10 月底还有 {daysLeft} 天。</span>
+      <span class="lang-en">Traces of each day: writing, bookmarks, job hunting, practice. {daysLeft} days left until the end of October.</span>
     </p>
     <div class="activity-scroll">
       <div class="activity-months">
@@ -214,9 +209,10 @@ while (cursor <= END) {
     </div>
     <div class="activity-legend">
       {
-        Object.values(CATS).map((cat) => (
+        legend.map((cat) => (
           <span class="a-legend-item">
             <i class="a-day" style={`background:${cat.color}`} />
+            <span>{cat.emoji}</span>
             <span class="lang-zh">{cat.zh}</span>
             <span class="lang-en">{cat.en}</span>
           </span>

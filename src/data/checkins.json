@@ -1,14 +1,69 @@
 {
   "activities": [
-    { "id": "applied", "emoji": "📮", "zh": "投简历", "en": "Applications", "color": "#4dabf7", "type": "count" },
-    { "id": "replies", "emoji": "💌", "zh": "收到回复", "en": "Replies", "color": "#20c997", "type": "count" },
-    { "id": "interview", "emoji": "📞", "zh": "面试", "en": "Interviews", "color": "#7048e8", "type": "count" },
-    { "id": "project", "emoji": "🛠", "zh": "做项目", "en": "Projects", "color": "#2f9e44", "type": "toggle" },
-    { "id": "study", "emoji": "📖", "zh": "学习", "en": "Learning", "color": "#f06595", "type": "toggle" },
-    { "id": "piano", "emoji": "🎹", "zh": "弹琴", "en": "Piano", "color": "#c2255c", "type": "toggle" },
-    { "id": "language", "emoji": "🗣", "zh": "学语言", "en": "Language", "color": "#1098ad", "type": "toggle" }
+    {
+      "id": "applied",
+      "emoji": "📮",
+      "zh": "投简历",
+      "en": "Applications",
+      "color": "#4dabf7",
+      "type": "count"
+    },
+    {
+      "id": "replies",
+      "emoji": "💌",
+      "zh": "收到回复",
+      "en": "Replies",
+      "color": "#20c997",
+      "type": "count"
+    },
+    {
+      "id": "interview",
+      "emoji": "📞",
+      "zh": "面试",
+      "en": "Interviews",
+      "color": "#7048e8",
+      "type": "count"
+    },
+    {
+      "id": "project",
+      "emoji": "🛠",
+      "zh": "做项目",
+      "en": "Projects",
+      "color": "#2f9e44",
+      "type": "toggle"
+    },
+    {
+      "id": "study",
+      "emoji": "📖",
+      "zh": "学习",
+      "en": "Learning",
+      "color": "#f06595",
+      "type": "toggle"
+    },
+    {
+      "id": "piano",
+      "emoji": "🎹",
+      "zh": "弹琴",
+      "en": "Piano",
+      "color": "#c2255c",
+      "type": "toggle"
+    },
+    {
+      "id": "language",
+      "emoji": "🗣",
+      "zh": "学语言",
+      "en": "Language",
+      "color": "#1098ad",
+      "type": "toggle"
+    }
   ],
   "log": {
-    "2026-07-30": { "applied": 5, "project": 1 }
+    "2026-07-30": {
+      "applied": 5,
+      "project": 1
+    },
+    "2026-08-01": {
+      "project": 1
+    }
   }
 }
